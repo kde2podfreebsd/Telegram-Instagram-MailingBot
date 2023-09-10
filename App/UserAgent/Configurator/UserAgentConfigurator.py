@@ -1,11 +1,13 @@
 import errno
 import json
+import logging
 import os
 import re
 from typing import List
 
 from App.Config import basedir
 from App.Config import sessions_dirPath
+from App.Logger import ApplicationLogger
 from App.UserAgent.Configurator import AppConfig
 from App.UserAgent.Configurator import ChannelConfig
 from App.UserAgent.Configurator import ConfigValidationException
@@ -13,12 +15,15 @@ from App.UserAgent.Configurator import UserAgentConfig
 
 
 class UserAgentConfigurator:
+    logger = ApplicationLogger(log_level=logging.DEBUG)
+
     def __init__(self, channelCount: int):
         self.config_path = os.path.join(basedir, "Config", "UserAgents_config.json")
 
         if not os.path.exists(self.config_path):
             self.createConfigTemplate(channelCount)
 
+    @logger.exception_handler
     def createConfigTemplate(self, channelCount: int):
         os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
 
@@ -43,6 +48,7 @@ class UserAgentConfigurator:
         with open(self.config_path, "w") as file:
             json.dump(config_data.to_dict(), file, indent=4)
 
+    @logger.exception_handler
     def load_config(self) -> AppConfig:
         if not os.path.exists(self.config_path):
             raise FileNotFoundError(
@@ -68,6 +74,7 @@ class UserAgentConfigurator:
                 channels_config=channels_config, userAgent_config=user_agent_config
             )
 
+    @logger.exception_handler
     def update_config(
         self,
         new_channels_config: List[ChannelConfig],
@@ -101,6 +108,9 @@ class UserAgentConfigurator:
             with open(self.config_path, "w") as file:
                 json.dump(config_data.to_dict(), file, indent=4)
 
+        self.logger.log_info("App.Config.UserAgents_config Update!")
+
+    @logger.exception_handler
     def validate_channels_config(self, channels_config: List[ChannelConfig]) -> bool:
         for channel_index, channel in enumerate(channels_config):
             if not self.validate_advertising_channel(channel.advertising_channel):
@@ -147,6 +157,7 @@ class UserAgentConfigurator:
         return True
 
     @staticmethod
+    @logger.exception_handler
     def validate_advertising_channel(channel: str) -> bool:
         valid_formats = [r"^https://t.me/\w+$", r"^@[\w_]+$", r"^t.me/\w+$"]
         for pattern in valid_formats:
@@ -155,6 +166,7 @@ class UserAgentConfigurator:
         return False
 
     @staticmethod
+    @logger.exception_handler
     def validate_user_agent_config(user_agent_config: UserAgentConfig) -> bool:
         for attr_value in user_agent_config.__dict__.values():
             if not isinstance(attr_value, str):
