@@ -1,20 +1,23 @@
-import os
 import logging
+import os
 from functools import wraps
+
 from App.Config import basedir
 
 
 class ApplicationLogger:
     def __init__(self, log_level=logging.INFO):
-        logs_dir = os.path.join(basedir, 'Logger', 'Logs')
+        logs_dir = os.path.join(basedir, "Logger", "Logs")
         if not os.path.exists(logs_dir):
             os.makedirs(logs_dir)
 
-        self.log_file = os.path.join(logs_dir, 'app.log')
+        self.log_file = os.path.join(logs_dir, "app.log")
         self.logger = logging.getLogger("ApplicationLogger")
         self.logger.setLevel(log_level)
 
-        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
 
         file_handler = logging.FileHandler(self.log_file)
         file_handler.setFormatter(formatter)
@@ -34,7 +37,7 @@ class ApplicationLogger:
         self.logger.error(message)
 
     def log_exception(self, message):
-        self.logger.exception(f'\n{message}\n')
+        self.logger.exception(f"\n{message}\n")
 
     def exception_handler(self, func):
         @wraps(func)
@@ -43,4 +46,5 @@ class ApplicationLogger:
                 return func(*args, **kwargs)
             except Exception as e:
                 self.log_exception(f"Exception in {func.__name__}: {str(e)}")
+
         return wrapper

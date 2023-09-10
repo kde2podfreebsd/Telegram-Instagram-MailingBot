@@ -173,42 +173,66 @@ class UserAgentConfigurator:
                 return False
         return True
 
+    @logger.exception_handler
+    def validate_config(self):
+        try:
+            config_data = self.load_config()
+
+            if not self.validate_channels_config(config_data.channels_config):
+                self.logger.log_error("Конфигурация каналов недопустима.")
+                return False
+
+            if not self.validate_user_agent_config(config_data.userAgent_config):
+                self.logger.log_error("Конфигурация юзер-агента недопустима.")
+                return False
+
+            self.logger.log_info("Конфигурация прошла успешную проверку.")
+            return True
+        except Exception as e:
+            self.logger.log_error(f"Ошибка при проверке конфигурации: {str(e)}")
+            return False
+
 
 if __name__ == "__main__":
     configurator = UserAgentConfigurator(channelCount=2)
 
-    new_channels_config = [
-        ChannelConfig(
-            advertising_channel="@new_channel",
-            target_chats=["@new_chat1", "@new_chat2"],
-            tg_accounts=["session_new.session"],
-            advertising_messages=["New Message!"],
-        ),
-        ChannelConfig(
-            advertising_channel="https://t.me/publicgrouptesttest",
-            target_chats=["@new_chat3", "t.me/publicgrouptesttest"],
-            tg_accounts=["session_new.session"],
-            advertising_messages=["New Message!"],
-        ),
-        ChannelConfig(
-            advertising_channel="@new_channel",
-            target_chats=["@new_chat1", "@new_chat2"],
-            tg_accounts=["session_new.session"],
-            advertising_messages=["New Message!"],
-        ),
-        ChannelConfig(
-            advertising_channel="https://t.me/publicgrouptesttest",
-            target_chats=["@new_chat3", "t.me/publicgrouptesttest"],
-            tg_accounts=["session_new.session"],
-            advertising_messages=["New Message!"],
-        ),
-    ]
+    # new_channels_config = [
+    #     ChannelConfig(
+    #         advertising_channel="@new_channel",
+    #         target_chats=["@new_chat1", "@new_chat2"],
+    #         tg_accounts=["session_new.session"],
+    #         advertising_messages=["New Message!"],
+    #     ),
+    #     ChannelConfig(
+    #         advertising_channel="https://t.me/publicgrouptesttest",
+    #         target_chats=["@new_chat3", "t.me/publicgrouptesttest"],
+    #         tg_accounts=["session_new.session"],
+    #         advertising_messages=["New Message!"],
+    #     ),
+    #     ChannelConfig(
+    #         advertising_channel="@new_channel",
+    #         target_chats=["@new_chat1", "@new_chat2"],
+    #         tg_accounts=["session_new.session"],
+    #         advertising_messages=["New Message!"],
+    #     ),
+    #     ChannelConfig(
+    #         advertising_channel="https://t.me/publicgrouptesttest",
+    #         target_chats=["@new_chat3", "t.me/publicgrouptesttest"],
+    #         tg_accounts=["session_new.session"],
+    #         advertising_messages=["New Message!"],
+    #     ),
+    # ]
+    #
+    # new_user_agent_config = UserAgentConfig(
+    #     param1="new_value1", param2="new_value2", param3="new_value3"
+    # )
+    #
+    # try:
+    #     configurator.update_config(new_channels_config, new_user_agent_config)
+    # except ConfigValidationException as e:
+    #     print(e)
 
-    new_user_agent_config = UserAgentConfig(
-        param1="new_value1", param2="new_value2", param3="new_value3"
-    )
-
-    try:
-        configurator.update_config(new_channels_config, new_user_agent_config)
-    except ConfigValidationException as e:
-        print(e)
+    # if configurator.validate_config():
+    #     print("Конфигурация прошла проверку.")
+    # else:
+    #     print("Конфигурация не прошла проверку.")

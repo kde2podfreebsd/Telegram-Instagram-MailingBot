@@ -1,6 +1,8 @@
-import os
 import logging
+import os
+
 import pytest
+
 from App.Logger import ApplicationLogger
 
 log_file_path = os.path.join(os.path.dirname(__file__), "../App/Logger/Logs/app.log")

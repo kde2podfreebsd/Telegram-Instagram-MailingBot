@@ -11,3 +11,8 @@ clean:
 fix_git_cache:
 	git rm -rf --cached .
 	git add .
+
+test:
+	cd Tests/
+	pytest
+	rm -rf .pytest_cache
