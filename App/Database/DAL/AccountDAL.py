@@ -6,6 +6,9 @@ from sqlalchemy.future import select
 
 from App.Config import sessions_dirPath
 from App.Database.Models.Models import Account
+from App.Logger import ApplicationLogger
+
+logger = ApplicationLogger()
 
 
 class AccountDAL:
@@ -13,31 +16,41 @@ class AccountDAL:
         self.db_session = db_session
 
     async def createAccount(
-        self, session_name, target_chat, message=None, advertising_channels=None
+        self,
+        session_name,
+        target_chat=None,
+        message=None,
+        advertising_channels=None,
+        status=False,
     ):
         session_file_path = os.path.join(sessions_dirPath, f"{session_name}.session")
 
         if not os.path.isfile(session_file_path):
+            logger.log_error(f"Not found session with this name {session_name}")
             return None
 
         try:
-            async with self.db_session.begin():
-                existing_account = await self.getAccountBySessionName(session_name)
-                if existing_account:
-                    return None
+            existing_account = await self.getAccountBySessionName(session_name)
+            if existing_account:
+                logger.log_error(f"Account already exist with this name {session_name}")
+                return None
 
-                account = Account(
-                    session_file_path=session_file_path,
-                    target_chat=target_chat,
-                    message=message,
-                    advertising_channels=advertising_channels,
-                )
-                self.db_session.add(account)
-                await self.db_session.flush()
+            account = Account(
+                session_file_path=session_file_path,
+                target_chat=target_chat,
+                message=message,
+                advertising_channels=advertising_channels,
+                status=status,
+            )
+            self.db_session.add(account)
+            await self.db_session.flush()
 
-                return account
+            logger.log_info("Account added to database")
+            return account
+
         except IntegrityError:
             await self.db_session.rollback()
+            logger.log_warning("IntegrityError, db rollback")
             return None
 
     async def deleteAccount(self, session_name):
@@ -45,8 +58,10 @@ class AccountDAL:
         if account:
             await self.db_session.delete(account)
             await self.db_session.flush()
+            logger.log_info("Account deleted from database")
             return True
         else:
+            logger.log_error("Account doesnt exists in database")
             return False
 
     async def updateTargetChat(self, session_name, new_target_chat):
@@ -54,8 +69,12 @@ class AccountDAL:
         if account:
             account.target_chat = new_target_chat
             await self.db_session.flush()
+            logger.log_info(
+                f"Updated target chat: {new_target_chat} on account {session_name}"
+            )
             return True
         else:
+            logger.log_error("Account doesnt exists in database")
             return False
 
     async def updateMessage(self, session_name, new_message):
@@ -65,6 +84,7 @@ class AccountDAL:
             await self.db_session.flush()
             return True
         else:
+            logger.log_error("Account doesnt exists in database")
             return False
 
     async def addAdvertisingChannel(self, session_name, channel_name):
@@ -72,13 +92,20 @@ class AccountDAL:
         if account:
             if account.advertising_channels is None:
                 account.advertising_channels = []
+                logger.log_info("Init Mutable ARRAY = []")
 
             if channel_name not in account.advertising_channels:
                 account.advertising_channels.append(channel_name)
                 self.db_session.add(account)
                 await self.db_session.flush()
+                logger.log_info(
+                    f"{channel_name} added to {session_name}.advertising_channels"
+                )
                 return True
 
+        logger.log_error(
+            "Account doesnt exists in database or channel name already in account.advertising_channels"
+        )
         return False
 
     async def removeAdvertisingChannel(self, session_name, channel_name):
@@ -87,8 +114,25 @@ class AccountDAL:
             if channel_name in account.advertising_channels:
                 account.advertising_channels.remove(channel_name)
                 await self.db_session.flush()
+                logger.log_info(
+                    f"{channel_name} removed from {session_name}.advertising_channels"
+                )
                 return True
+        logger.log_error(
+            "Account doesnt exists in database or channel name not in account.advertising_channels"
+        )
         return False
+
+    async def updateStatus(self, session_name, status: bool):
+        account = await self.getAccountBySessionName(session_name)
+        if account:
+            account.status = status
+            await self.db_session.flush()
+            logger.log_info(f"Updated status: {status} on account {session_name}")
+            return True
+        else:
+            logger.log_error("Account doesnt exists in database")
+            return False
 
     async def getAccountBySessionName(self, session_name):
         result = await self.db_session.execute(
@@ -97,3 +141,21 @@ class AccountDAL:
             )
         )
         return result.scalar()
+
+    async def getSessionNamesWithTrueStatus(self):
+        result = await self.db_session.execute(
+            select(Account.session_file_path).filter(Account.status == True)
+        )
+        session_paths = [row[0] for row in result]
+        session_names = [
+            os.path.splitext(os.path.basename(path))[0] for path in session_paths
+        ]
+        return session_names
+
+    async def createAccountsFromSessionFiles(self):
+        session_files = os.listdir(sessions_dirPath)
+
+        for session_file in session_files:
+            if session_file.endswith(".session"):
+                session_name = os.path.splitext(session_file)[0]
+                await self.createAccount(session_name=session_name)

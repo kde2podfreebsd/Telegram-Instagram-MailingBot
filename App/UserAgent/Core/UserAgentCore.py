@@ -36,7 +36,9 @@ class UserAgentCore:
         self,
         chat: str | int,
         message: str,
-        parseMode: Optional[pyrogram.enums.ParseMode] = None,
+        parseMode: Optional[
+            pyrogram.enums.ParseMode
+        ] = pyrogram.enums.ParseMode.MARKDOWN,
     ):
         async with self.app as app:
             await app.send_message(chat_id=chat, text=message, parse_mode=parseMode)

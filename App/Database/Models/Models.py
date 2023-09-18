@@ -1,4 +1,4 @@
-# from sqlalchemy import Boolean
+from sqlalchemy import Boolean
 from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import String
@@ -13,6 +13,7 @@ class Account(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     session_file_path = Column(String, nullable=False)
-    target_chat = Column(String, nullable=False)
+    target_chat = Column(String, nullable=True)
     message = Column(String, nullable=True)
     advertising_channels = Column(MutableList.as_mutable(ARRAY(String)), nullable=True)
+    status = Column(Boolean, nullable=False, default=False)
