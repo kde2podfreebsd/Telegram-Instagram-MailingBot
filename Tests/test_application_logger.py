@@ -5,7 +5,7 @@ import pytest
 
 from App.Logger import ApplicationLogger
 
-log_file_path = os.path.join(os.path.dirname(__file__), "../App/Logger/Logs/app.log")
+log_file_path = os.path.join(os.path.dirname(__file__), "../App/Logger/logs/app.log")
 
 test_logger = ApplicationLogger(log_level=logging.DEBUG)
 
