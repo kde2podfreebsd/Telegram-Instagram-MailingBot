@@ -5,7 +5,7 @@ services:
     image: postgres:14.1-alpine
     restart: always
     env_file:
-      - .env  # Указываем файл .env для переменных окружения
+      - .env
     ports:
       - "5432:5432"
     networks:
@@ -16,7 +16,7 @@ services:
     image: dpage/pgadmin4
     restart: always
     env_file:
-      - .env  # Указываем файл .env для переменных окружения
+      - .env
     ports:
       - '5050:80'
     networks:

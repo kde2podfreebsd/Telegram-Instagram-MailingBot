@@ -10,7 +10,8 @@ load_dotenv()
 
 POSTGRES_USER = str(os.getenv("POSTGRES_USER"))
 POSTGRES_PASSWORD = str(os.getenv("POSTGRES_PASSWORD"))
-POSTGRES_HOST = "db"
+# POSTGRES_HOST = "db"
+POSTGRES_HOST = "172.19.0.2"
 POSTGRES_PORT = 5432
 POSTGRES_DB = str(os.getenv("POSTGRES_DB"))
 

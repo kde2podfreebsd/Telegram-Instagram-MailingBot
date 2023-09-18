@@ -2,30 +2,17 @@
 from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import String
+from sqlalchemy.ext.mutable import MutableList
+from sqlalchemy.types import ARRAY
 
 from App.Database.Models import Base
-
-# from sqlalchemy import create_engine
-# from sqlalchemy import DateTime
-# from sqlalchemy import ForeignKey
-# from sqlalchemy import Text
-# from sqlalchemy.dialects.postgresql import JSON
-# from sqlalchemy.ext.declarative import declarative_base
-# from sqlalchemy.orm import relationship
-# from sqlalchemy.sql import func
-# from sqlalchemy.types import ARRAY
-
-
-class TargetChannel(Base):
-    __tablename__ = "target_channels"
-
-    id = Column(Integer, primary_key=True)
-    username = Column(String, unique=True)
-    shortName = Column(String)
 
 
 class Account(Base):
     __tablename__ = "accounts"
 
-    id = Column(Integer, primary_key=True)
-    username = Column
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_file_path = Column(String, nullable=False)
+    target_chat = Column(String, nullable=False)
+    message = Column(String, nullable=True)
+    advertising_channels = Column(MutableList.as_mutable(ARRAY(String)), nullable=True)
