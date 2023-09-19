@@ -10,7 +10,7 @@ async def main():
 
         # print(await account_dal.getSessionNames())
 
-        session_name = "rhdv"
+        session_name = "donqhomo"
 
         # 1. Создание аккаунта
         # account = await account_dal.createAccount(session_name)

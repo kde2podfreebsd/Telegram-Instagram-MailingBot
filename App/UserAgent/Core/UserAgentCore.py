@@ -41,8 +41,16 @@ class UserAgentCore:
         ] = pyrogram.enums.ParseMode.MARKDOWN,
     ):
         async with self.app as app:
-            await app.send_message(chat_id=chat, text=message, parse_mode=parseMode)
+            output = await app.send_message(
+                chat_id=chat, text=message, parse_mode=parseMode
+            )
             logger.log_info(f"Send message to: {chat}. Message: {message}")
+            return {"msg_ids": output.id, "chat": chat}
+
+    @logger.exception_handler
+    async def deleteMsg(self, chat: str | int, message_ids: int):
+        async with self.app as app:
+            await app.delete_messages(chat_id=chat, message_ids=message_ids)
 
     @logger.exception_handler
     async def joinChat(self, chat: str | int):

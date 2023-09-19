@@ -4,7 +4,7 @@ from .bot import bot
 
 basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 sessions_dirPath = f"{basedir}/UserAgent/sessions"
-logs_dirPath = f"{basedir}/Logger/logs/"
+logs_dirPath = f"{basedir}/Logger/logs"
 
 
 def singleton(cls):

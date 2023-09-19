@@ -6,6 +6,8 @@ from App.Bot.Markups import MarkupBuilder
 from App.Config import bot
 from App.Config import message_context_manager
 from App.Config import sessions_dirPath
+from App.Database.DAL.AccountDAL import AccountDAL
+from App.Database.session import async_session
 
 
 async def _newAccountMenu(message):
@@ -84,10 +86,28 @@ async def new_document(message: telebot.types.Message):
     with open(file_path, "wb") as new_file:
         new_file.write(downloaded_file)
 
+    try:
+        async with async_session() as session:
+            account_dal = AccountDAL(session)
+            await account_dal.createAccount(file_name.replace(".session", ""))
+    except Exception as e:
+        msg = await bot.edit_message_text(
+            chat_id=message.chat.id,
+            message_id=result_message.id,
+            text="<i>Что-то пошло не так при добавлении сессии аккаунта в базу данных</i>",
+            reply_markup=MarkupBuilder.back_to_menu(),
+            parse_mode="HTML",
+        )
+
+        await message_context_manager.add_msgId_to_help_menu_dict(
+            chat_id=message.chat.id, msgId=msg.message_id
+        )
+        return
+
     msg = await bot.edit_message_text(
         chat_id=message.chat.id,
         message_id=result_message.id,
-        text="<i>Сессия сохранена успешно!</i>",
+        text="<i>Сессия сохранена успешно и добавлена в базу данных!</i>",
         reply_markup=MarkupBuilder.back_to_menu(),
         parse_mode="HTML",
     )

@@ -152,6 +152,10 @@ class AccountDAL:
         ]
         return session_names
 
+    async def getAllAccounts(self):
+        result = await self.db_session.execute(select(Account))
+        return [row[0] for row in result]
+
     async def createAccountsFromSessionFiles(self):
         session_files = os.listdir(sessions_dirPath)
 

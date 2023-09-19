@@ -5,9 +5,10 @@ from telebot.asyncio_filters import IsDigitFilter
 from telebot.asyncio_filters import IsReplyFilter
 from telebot.asyncio_filters import StateFilter
 
+from App.Bot.Handlers.EditAccountsHandler import _editAccountsMenu
+from App.Bot.Handlers.EditAccountsHandler import _showAccountActions
 from App.Bot.Handlers.LogsHandler import _sendLog
 from App.Bot.Handlers.MainMenuHandler import _mainMenu
-from App.Bot.Handlers.MainMenuHandler import send_welcome  # noqa
 from App.Bot.Handlers.NewAccountHandler import _newAccountMenu
 from App.Bot.Markups import MarkupBuilder  # noqa
 from App.Bot.Middlewares import FloodingMiddleware
@@ -43,6 +44,12 @@ class Bot:
             )
             await _newAccountMenu(message)
 
+        if message.text == "🛠 Редактировать аккаунты":
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=message.chat.id
+            )
+            await _editAccountsMenu(message)
+
     @staticmethod
     @bot.callback_query_handler(func=lambda call: True)
     async def HandlerInlineMiddleware(call):
@@ -51,6 +58,34 @@ class Bot:
                 chat_id=call.message.chat.id
             )
             await _mainMenu(message=call.message)
+
+        if call.data == "back_to_editAccounts_menu":
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            await _editAccountsMenu(message=call.message)
+
+        if "edit_account" in call.data:
+            account_name = call.data.split("#")[-1]
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            await _showAccountActions(message=call.message, account_name=account_name)
+
+        if "change_acc_msg" in call.data:
+            account_name = call.data.split("#")[-1]
+
+        if "add_adv_chat" in call.data:
+            account_name = call.data.split("#")[-1]
+
+        if "remove_adv_chat" in call.data:
+            account_name = call.data.split("#")[-1]
+
+        if "change_target_channel" in call.data:
+            account_name = call.data.split("#")[-1]
+
+        if "change_status" in call.data:
+            account_name = call.data.split("#")[-1]
 
     @staticmethod
     async def polling():
