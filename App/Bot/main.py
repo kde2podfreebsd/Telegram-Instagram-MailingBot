@@ -5,10 +5,13 @@ from telebot.asyncio_filters import IsDigitFilter
 from telebot.asyncio_filters import IsReplyFilter
 from telebot.asyncio_filters import StateFilter
 
+from App.Bot.Handlers.EditAccountActionsHandler import _sendAddAdvChatText
 from App.Bot.Handlers.EditAccountActionsHandler import _sendChangeAccountMessageText
 from App.Bot.Handlers.EditAccountActionsHandler import _sendChangePromptText
 from App.Bot.Handlers.EditAccountActionsHandler import _sendChangeTargetChannelText
-from App.Bot.Handlers.EditAccountActionsHandler import EditAccountActionStates
+from App.Bot.Handlers.EditAccountActionsHandler import _sendDeleteAccountText
+from App.Bot.Handlers.EditAccountActionsHandler import _sendReloadChatGPTMessageText
+from App.Bot.Handlers.EditAccountActionsHandler import _sendRemoveAdvChatText
 from App.Bot.Handlers.EditAccountsMenuHandler import _editAccountsMenu
 from App.Bot.Handlers.EditAccountsMenuHandler import _showAccountActions
 from App.Bot.Handlers.LogsHandler import _sendLog
@@ -102,11 +105,15 @@ class Bot:
                 chat_id=call.message.chat.id, account_name=account_name
             )
 
+            await _sendAddAdvChatText(call.message)
+
         if "remove_adv_chat" in call.data:
             account_name = call.data.split("#")[-1]
             account_context.updateAccountName(
                 chat_id=call.message.chat.id, account_name=account_name
             )
+
+            await _sendRemoveAdvChatText(call.message)
 
         if "change_target_channel" in call.data:
             account_name = call.data.split("#")[-1]
@@ -127,11 +134,15 @@ class Bot:
                 chat_id=call.message.chat.id, account_name=account_name
             )
 
+            await _sendReloadChatGPTMessageText(call.message)
+
         if "delete_account" in call.data:
             account_name = call.data.split("#")[-1]
             account_context.updateAccountName(
                 chat_id=call.message.chat.id, account_name=account_name
             )
+
+            await _sendDeleteAccountText(call.message)
 
     @staticmethod
     async def polling():

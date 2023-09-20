@@ -11,6 +11,8 @@ from App.Database.session import async_session
 
 class MarkupBuilder(object):
 
+    _adv_chat_added = None
+    _sendAddAdvChatText = None
     _errorSetTargetChannel = None
     _prompt_edited: object = None
     _sendChangePromptText: object = None
@@ -248,6 +250,12 @@ class MarkupBuilder(object):
 
     @classmethod
     @property
+    def target_edited(cls):
+        cls._target_edited = "<b>✅Целевой канал изменен</b>"
+        return cls._target_edited
+
+    @classmethod
+    @property
     def sendChangePromptText(cls):
         cls._sendChangePromptText = "🎯<b>Укажите @username целевого канала.</b>\n<i>Этот @username будет подставляться в рекламное сообщение и prompt для ChatGPT</i>"
         return cls._sendChangePromptText
@@ -257,6 +265,52 @@ class MarkupBuilder(object):
     def errorSetTargetChannel(cls):
         cls._errorSetTargetChannel = "❌<b>Ошибка форматирования @username отправьте еще раз или вернитесь в главное меню</b>"
         return cls._errorSetTargetChannel
+
+    @classmethod
+    @property
+    def sendAddAdvChatText(cls):
+        cls._sendAddAdvChatText = (
+            "➕<b>Укажите @username чата для рекламы данного канала</b>"
+        )
+        return cls._sendAddAdvChatText
+
+    @classmethod
+    @property
+    def adv_chat_added(cls):
+        cls._adv_chat_added = "<b>✅Рекламный чат добавлен</b>"
+        return cls._adv_chat_added
+
+    @classmethod
+    @property
+    def adv_chat_removed(cls):
+        cls._adv_chat_removed = "✅<b>Рекламный чат удален</b>"
+        return cls._adv_chat_removed
+
+    @classmethod
+    @property
+    def sendRemoveAdvChatText(cls):
+        cls._sendRemoveAdvChatText = (
+            "➖<b>Укажите @username для удаления чата из рекламного списка чатов</b>"
+        )
+        return cls._sendRemoveAdvChatText
+
+    @classmethod
+    @property
+    def ReloadedChatGPTMessageText(cls):
+        cls._ReloadedChatGPTMessageText = "✅<b>Рекламное сообщение обновлено</b>"
+        return cls._ReloadedChatGPTMessageText
+
+    @classmethod
+    @property
+    def sendDeleteAccountText(cls):
+        cls._sendDeleteAccountText = "🗑<b>Вы точно хотите удалить аккаунт? Напишите: ДА, ТОЧНО - что бы удалить аккаунт</b>"
+        return cls._sendDeleteAccountText
+
+    @classmethod
+    @property
+    def account_deleted(cls):
+        cls._account_deleted = "✅<b>Аккаунт и сессия удалены</b>"
+        return cls._account_deleted
 
     @classmethod
     def back_to_menu(cls):

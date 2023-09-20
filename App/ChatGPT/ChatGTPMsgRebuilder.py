@@ -26,11 +26,10 @@ class ChatGPTMessageRebuilder:
                 {
                     "role": "user",
                     "content": f"""
-Переформулируй рекламное сообщение, что бы изначальный смысл приблезительно сохранялся.
-Измени как минимум половину сообщения.
+Переформулируй и дополни рекламное сообщение.
 Не убирай {account.target_chat} из сообщения - это ссылка на рекламируемый чат.
-Не добавляй лишних слов в ответ, только рекламное сообщение.
-Вот описание канала, оно поможет для переформулировки рекламного сообщения: {account.prompt}.
+Не добавляй лишних слов в ответ, только сгенерированое рекламное сообщение.
+Вот описание канала, оно поможет для переформулировки и дополнения рекламного сообщения: {account.prompt}.
 Вот сообщение для редактирования: {account.message}
 """,
                 }
@@ -42,6 +41,3 @@ class ChatGPTMessageRebuilder:
             resp = completion["choices"][0]["message"]["content"]
 
             await account_dal.updateMessage(session_name=session_name, new_message=resp)
-
-
-asyncio.run(ChatGPTMessageRebuilder.rewrite_message("rhdv"))

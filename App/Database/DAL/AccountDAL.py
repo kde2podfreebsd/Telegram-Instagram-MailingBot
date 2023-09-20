@@ -113,6 +113,7 @@ class AccountDAL:
                 logger.log_info(
                     f"{channel_name} added to {session_name}.advertising_channels"
                 )
+
                 return True
 
         logger.log_error(
