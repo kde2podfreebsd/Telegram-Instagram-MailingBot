@@ -82,6 +82,18 @@ class AccountDAL:
         if account:
             account.message = new_message
             await self.db_session.flush()
+            logger.log_info(f"Updated message: {new_message} on account {session_name}")
+            return True
+        else:
+            logger.log_error("Account doesnt exists in database")
+            return False
+
+    async def updatePrompt(self, session_name, new_prompt):
+        account = await self.getAccountBySessionName(session_name)
+        if account:
+            account.prompt = new_prompt
+            await self.db_session.flush()
+            logger.log_info(f"Updated prompt: {new_prompt} on account {session_name}")
             return True
         else:
             logger.log_error("Account doesnt exists in database")
@@ -101,6 +113,7 @@ class AccountDAL:
                 logger.log_info(
                     f"{channel_name} added to {session_name}.advertising_channels"
                 )
+
                 return True
 
         logger.log_error(
@@ -151,6 +164,10 @@ class AccountDAL:
             os.path.splitext(os.path.basename(path))[0] for path in session_paths
         ]
         return session_names
+
+    async def getAllAccounts(self):
+        result = await self.db_session.execute(select(Account))
+        return [row[0] for row in result]
 
     async def createAccountsFromSessionFiles(self):
         session_files = os.listdir(sessions_dirPath)

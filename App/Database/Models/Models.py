@@ -13,7 +13,8 @@ class Account(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     session_file_path = Column(String, nullable=False)
-    target_chat = Column(String, nullable=True)
-    message = Column(String, nullable=True)
+    target_chat = Column(String, nullable=True, default="Не указан")
+    message = Column(String, nullable=True, default="Не указано")
+    prompt = Column(String, nullable=True, default="Не указан")
     advertising_channels = Column(MutableList.as_mutable(ARRAY(String)), nullable=True)
     status = Column(Boolean, nullable=False, default=False)
