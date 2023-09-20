@@ -15,5 +15,6 @@ class Account(Base):
     session_file_path = Column(String, nullable=False)
     target_chat = Column(String, nullable=True)
     message = Column(String, nullable=True)
+    prompt = Column(String, nullable=True)
     advertising_channels = Column(MutableList.as_mutable(ARRAY(String)), nullable=True)
     status = Column(Boolean, nullable=False, default=False)

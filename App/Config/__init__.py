@@ -38,4 +38,14 @@ class MessageContextManager:
             self.help_menu_msgId_to_delete[chat_id] = None
 
 
+@singleton
+class AccountContext:
+    def __init__(self):
+        self.account_name = {}
+
+    def updateAccountName(self, chat_id: int, account_name: str):
+        self.account_name[chat_id] = account_name
+
+
 message_context_manager = MessageContextManager()
+account_context = AccountContext()

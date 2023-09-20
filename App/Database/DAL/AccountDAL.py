@@ -82,6 +82,18 @@ class AccountDAL:
         if account:
             account.message = new_message
             await self.db_session.flush()
+            logger.log_info(f"Updated message: {new_message} on account {session_name}")
+            return True
+        else:
+            logger.log_error("Account doesnt exists in database")
+            return False
+
+    async def updatePrompt(self, session_name, new_prompt):
+        account = await self.getAccountBySessionName(session_name)
+        if account:
+            account.prompt = new_prompt
+            await self.db_session.flush()
+            logger.log_info(f"Updated prompt: {new_prompt} on account {session_name}")
             return True
         else:
             logger.log_error("Account doesnt exists in database")

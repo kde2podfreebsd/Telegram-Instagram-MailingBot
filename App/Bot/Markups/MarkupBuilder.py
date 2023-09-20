@@ -11,6 +11,12 @@ from App.Database.session import async_session
 
 class MarkupBuilder(object):
 
+    _errorSetTargetChannel = None
+    _prompt_edited: object = None
+    _sendChangePromptText: object = None
+    _message_edited: object = None
+    _sendChangeAccountMessageText: object = None
+    _changeAccountMsg: object = None
     _editAccountsMenuText: object = None
     _new_account_state1: object = None
     _hide_menu: object = None
@@ -56,36 +62,54 @@ class MarkupBuilder(object):
                 [
                     types.InlineKeyboardButton(
                         text="💬Изменить сообщение",
-                        callback_data="change_acc_msg#account_name",
+                        callback_data=f"change_acc_msg#{account_name}",
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        text="✍️Изменить prompt для ChatGPT",
+                        callback_data=f"change_prompt#{account_name}",
                     )
                 ],
                 [
                     types.InlineKeyboardButton(
                         text="➕Добавить рекламный чат",
-                        callback_data="add_adv_chat#account_name",
+                        callback_data=f"add_adv_chat#{account_name}",
                     )
                 ],
                 [
                     types.InlineKeyboardButton(
                         text="➖Убрать рекламный чат",
-                        callback_data="remove_adv_chat#account_name",
+                        callback_data=f"remove_adv_chat#{account_name}",
                     )
                 ],
                 [
                     types.InlineKeyboardButton(
                         text="🎯Изменить целевой канал",
-                        callback_data="change_target_channel#account_name",
+                        callback_data=f"change_target_channel#{account_name}",
                     )
                 ],
                 [
                     types.InlineKeyboardButton(
                         text="🆙Изменить статус",
-                        callback_data="change_status#account_name",
+                        callback_data=f"change_status#{account_name}",
                     )
                 ],
                 [
                     types.InlineKeyboardButton(
-                        text="🔙Назад", callback_data="back_to_editAccounts_menu"
+                        text="🔄Обновить рекламное сообщение ChatGPT",
+                        callback_data=f"reload_chatgpt_message#{account_name}",
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        text="🗑Удалить аккаунт",
+                        callback_data=f"delete_account#{account_name}",
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        text="🔙Назад", callback_data=f"back_to_editAccounts_menu"
                     )
                 ],
             ],
@@ -102,16 +126,48 @@ class MarkupBuilder(object):
             advertising_channels = ""
             if account.advertising_channels is not None:
                 for x in account.advertising_channels:
-                    advertising_channels += f"{x}\n"
+                    y = x.replace("_", "\\_") if "_" in x else x
+                    advertising_channels += f"{y}\n"
             else:
-                advertising_channels = "Нет чатов для рекламы"
+                advertising_channels = "🤷‍♂️Нет чатов для рекламы"
 
-            out_message = f"""🤖Аккаунт: {os.path.splitext(os.path.basename(account.session_file_path))[0]}
-🎯Целевой канал: {account.target_chat}
+            target_chat = (
+                account.target_chat.replace("_", "\\_")
+                if "_" in account.target_chat
+                else account.target_chat
+            )
+            account_username = (
+                os.path.splitext(os.path.basename(account.session_file_path))[
+                    0
+                ].replace("_", "\\_")
+                if "_"
+                in os.path.splitext(os.path.basename(account.session_file_path))[0]
+                else os.path.splitext(os.path.basename(account.session_file_path))[0]
+            )
+            prompt = (
+                account.prompt.replace("_", "\\_")
+                if "_" in account.prompt
+                else account.prompt
+            )
+
+            out_message = f"""
+🤖Аккаунт: {account_username}
+🎯Целевой канал: {target_chat}
 🆙Статус: {"Актвиен" if account.status else "Не активен"}
-💬Рекламное сообщение: {account.message}
-📝Чаты для рекламы: {advertising_channels}
+✍️ChatGPT prompt:
+-------------------
+{prompt}
+-------------------
+💬Рекламное сообщение:
+-------------------
+
+{account.message}
+
+-------------------
+📝Чаты для рекламы:
+{advertising_channels}
 """
+            print(out_message[62])
 
             def split_string(input_string, max_length=4000):
                 result = []
@@ -137,7 +193,6 @@ class MarkupBuilder(object):
             types.KeyboardButton("🤖 Добавить аккаунт"),
             types.KeyboardButton("🛠 Редактировать аккаунты"),
             types.KeyboardButton("📝 Логи"),
-            types.KeyboardButton("💬 ChatGPT"),
         )
         return menu
 
@@ -156,7 +211,7 @@ class MarkupBuilder(object):
     @classmethod
     @property
     def new_account_state1(cls):
-        cls._new_account_state1 = "Отправь файл сессии акаунта с уникальным именем в формате: <b>account_name.session</b>"
+        cls._new_account_state1 = "📩Отправь файл сессии акаунта с уникальным именем в формате: <b>account_name.session</b>"
         return cls._new_account_state1
 
     @classmethod
@@ -166,6 +221,44 @@ class MarkupBuilder(object):
         return cls._editAccountsMenuText
 
     @classmethod
+    @property
+    def sendChangeAccountMessageText(cls):
+        cls._sendChangeAccountMessageText = "💬<b>Укажите рекламное сообщение в MARKDOWN разметке, которое будет базой для перегенерации ChatGPT</b>"
+        return cls._sendChangeAccountMessageText
+
+    @classmethod
+    @property
+    def sendChangePromptText(cls):
+        cls._sendChangePromptText = (
+            "✍️<b>Укажите подробное описание канала, для prompt ChatGPT</b>"
+        )
+        return cls._sendChangePromptText
+
+    @classmethod
+    @property
+    def message_edited(cls):
+        cls._message_edited = "<b>✅Текст рекламного сообщения изменено</b>"
+        return cls._message_edited
+
+    @classmethod
+    @property
+    def prompt_edited(cls):
+        cls._prompt_edited = "<b>✅Текст prompt изменено</b>"
+        return cls._prompt_edited
+
+    @classmethod
+    @property
+    def sendChangePromptText(cls):
+        cls._sendChangePromptText = "🎯<b>Укажите @username целевого канала.</b>\n<i>Этот @username будет подставляться в рекламное сообщение и prompt для ChatGPT</i>"
+        return cls._sendChangePromptText
+
+    @classmethod
+    @property
+    def errorSetTargetChannel(cls):
+        cls._errorSetTargetChannel = "❌<b>Ошибка форматирования @username отправьте еще раз или вернитесь в главное меню</b>"
+        return cls._errorSetTargetChannel
+
+    @classmethod
     def back_to_menu(cls):
         return types.InlineKeyboardMarkup(
             row_width=1,
@@ -173,6 +266,19 @@ class MarkupBuilder(object):
                 [
                     types.InlineKeyboardButton(
                         text="🔙Назад", callback_data="back_to_main_menu"
+                    )
+                ]
+            ],
+        )
+
+    @classmethod
+    def back_to_edit_menu(cls, account_name):
+        return types.InlineKeyboardMarkup(
+            row_width=1,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        text="🔙Назад", callback_data=f"back_to_edit_menu#{account_name}"
                     )
                 ]
             ],

@@ -51,6 +51,7 @@ class UserAgentCore:
     async def deleteMsg(self, chat: str | int, message_ids: int):
         async with self.app as app:
             await app.delete_messages(chat_id=chat, message_ids=message_ids)
+            logger.log_info(f"Deleted message from: {chat}. Message: {message_ids}")
 
     @logger.exception_handler
     async def joinChat(self, chat: str | int):

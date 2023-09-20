@@ -54,7 +54,7 @@ async def new_document(message: telebot.types.Message):
         msg = await bot.edit_message_text(
             chat_id=message.chat.id,
             message_id=result_message.id,
-            text="<i>Вы отправили файл с неверным расширением. Расширение файла должно оканчиваться на .session</i>",
+            text="❌<i>Вы отправили файл с неверным расширением. Расширение файла должно оканчиваться на .session</i>",
             reply_markup=MarkupBuilder.back_to_menu(),
             parse_mode="HTML",
         )
@@ -70,7 +70,7 @@ async def new_document(message: telebot.types.Message):
         msg = await bot.edit_message_text(
             chat_id=message.chat.id,
             message_id=result_message.id,
-            text="<i>Сессия с таким названием уже существует. Попробуйте отправить другой файл сессии</i>",
+            text="❌<i>Сессия с таким названием уже существует. Попробуйте отправить другой файл сессии</i>",
             reply_markup=MarkupBuilder.back_to_menu(),
             parse_mode="HTML",
         )
@@ -90,11 +90,12 @@ async def new_document(message: telebot.types.Message):
         async with async_session() as session:
             account_dal = AccountDAL(session)
             await account_dal.createAccount(file_name.replace(".session", ""))
+
     except Exception as e:
         msg = await bot.edit_message_text(
             chat_id=message.chat.id,
             message_id=result_message.id,
-            text="<i>Что-то пошло не так при добавлении сессии аккаунта в базу данных</i>",
+            text=f"❌<i>Что-то пошло не так при добавлении сессии аккаунта в базу данных</i>\nError: {e}",
             reply_markup=MarkupBuilder.back_to_menu(),
             parse_mode="HTML",
         )
@@ -107,7 +108,7 @@ async def new_document(message: telebot.types.Message):
     msg = await bot.edit_message_text(
         chat_id=message.chat.id,
         message_id=result_message.id,
-        text="<i>Сессия сохранена успешно и добавлена в базу данных!</i>",
+        text="✅<b><i>Сессия сохранена успешно и добавлена в базу данных!</i></b>",
         reply_markup=MarkupBuilder.back_to_menu(),
         parse_mode="HTML",
     )

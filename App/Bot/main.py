@@ -5,13 +5,18 @@ from telebot.asyncio_filters import IsDigitFilter
 from telebot.asyncio_filters import IsReplyFilter
 from telebot.asyncio_filters import StateFilter
 
-from App.Bot.Handlers.EditAccountsHandler import _editAccountsMenu
-from App.Bot.Handlers.EditAccountsHandler import _showAccountActions
+from App.Bot.Handlers.EditAccountActionsHandler import _sendChangeAccountMessageText
+from App.Bot.Handlers.EditAccountActionsHandler import _sendChangePromptText
+from App.Bot.Handlers.EditAccountActionsHandler import _sendChangeTargetChannelText
+from App.Bot.Handlers.EditAccountActionsHandler import EditAccountActionStates
+from App.Bot.Handlers.EditAccountsMenuHandler import _editAccountsMenu
+from App.Bot.Handlers.EditAccountsMenuHandler import _showAccountActions
 from App.Bot.Handlers.LogsHandler import _sendLog
 from App.Bot.Handlers.MainMenuHandler import _mainMenu
 from App.Bot.Handlers.NewAccountHandler import _newAccountMenu
 from App.Bot.Markups import MarkupBuilder  # noqa
 from App.Bot.Middlewares import FloodingMiddleware
+from App.Config import account_context
 from App.Config import bot
 from App.Config import message_context_manager
 from App.Config import singleton
@@ -19,10 +24,12 @@ from App.Config import singleton
 
 @singleton
 class Bot:
+
+    bot.add_custom_filter(StateFilter(bot))
+
     def __init__(self):
         bot.add_custom_filter(IsReplyFilter())
         bot.add_custom_filter(ForwardFilter())
-        bot.add_custom_filter(StateFilter(bot))
         bot.add_custom_filter(IsDigitFilter())
         bot.setup_middleware(FloodingMiddleware(1))
 
@@ -65,7 +72,10 @@ class Bot:
             )
             await _editAccountsMenu(message=call.message)
 
-        if "edit_account" in call.data:
+        if "edit_account" in call.data or "back_to_edit_menu" in call.data:
+            await bot.delete_state(
+                user_id=call.message.chat.id, chat_id=call.message.chat.id
+            )
             account_name = call.data.split("#")[-1]
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=call.message.chat.id
@@ -74,18 +84,54 @@ class Bot:
 
         if "change_acc_msg" in call.data:
             account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+            await _sendChangeAccountMessageText(call.message)
+
+        if "change_prompt" in call.data:
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+            await _sendChangePromptText(call.message)
 
         if "add_adv_chat" in call.data:
             account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
 
         if "remove_adv_chat" in call.data:
             account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
 
         if "change_target_channel" in call.data:
             account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+            await _sendChangeTargetChannelText(call.message)
 
         if "change_status" in call.data:
             account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+
+        if "reload_chatgpt_message" in call.data:
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+
+        if "delete_account" in call.data:
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
 
     @staticmethod
     async def polling():
