@@ -11,7 +11,7 @@ test_logger = ApplicationLogger(log_level=logging.DEBUG)
 
 
 def test_log_info():
-    test_message = "This is a test message."
+    test_message = "This is a test.py message."
     test_logger.log_info(test_message)
     with open(log_file_path, "r") as log_file:
         log_contents = log_file.read()
@@ -19,7 +19,7 @@ def test_log_info():
 
 
 def test_log_warning():
-    test_message = "This is a test warning."
+    test_message = "This is a test.py warning."
     test_logger.log_warning(test_message)
 
     with open(log_file_path, "r") as log_file:
@@ -28,7 +28,7 @@ def test_log_warning():
 
 
 def test_log_error():
-    test_message = "This is a test error."
+    test_message = "This is a test.py error."
 
     test_logger.log_error(test_message)
 
@@ -38,7 +38,7 @@ def test_log_error():
 
 
 def test_log_exception():
-    test_message = "This is a test exception."
+    test_message = "This is a test.py exception."
 
     test_logger.log_exception(test_message)
 

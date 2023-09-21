@@ -9,12 +9,12 @@ from App.Database.session import async_session
 
 
 class ChatGPTMessageRebuilder:
-    def __init__(self):
+    @staticmethod
+    async def rewrite_message(session_name):
+
         load_dotenv()
         openai.api_key = os.getenv("OPENAI_API_KEY")
 
-    @staticmethod
-    async def rewrite_message(session_name):
         async with async_session() as session:
             account_dal = AccountDAL(session)
             account = await account_dal.getAccountBySessionName(
@@ -27,7 +27,7 @@ class ChatGPTMessageRebuilder:
                     "role": "user",
                     "content": f"""
 Переформулируй и дополни рекламное сообщение.
-Не убирай {account.target_chat} из сообщения - это ссылка на рекламируемый чат.
+Не убирай {account.target_chat} из сообщения - это ссылка на рекламируемый чат. Если его нет, то обязательно добавь в конец сообщения.
 Не добавляй лишних слов в ответ, только сгенерированое рекламное сообщение.
 Вот описание канала, оно поможет для переформулировки и дополнения рекламного сообщения: {account.prompt}.
 Вот сообщение для редактирования: {account.message}

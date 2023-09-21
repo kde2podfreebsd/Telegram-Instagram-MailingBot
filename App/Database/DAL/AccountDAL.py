@@ -126,6 +126,8 @@ class AccountDAL:
         if account and account.advertising_channels:
             if channel_name in account.advertising_channels:
                 account.advertising_channels.remove(channel_name)
+                if len(account.advertising_channels) == 0:
+                    account.status = False
                 await self.db_session.flush()
                 logger.log_info(
                     f"{channel_name} removed from {session_name}.advertising_channels"
@@ -176,3 +178,16 @@ class AccountDAL:
             if session_file.endswith(".session"):
                 session_name = os.path.splitext(session_file)[0]
                 await self.createAccount(session_name=session_name)
+
+    async def check_account_conditions(self, session_name: str):
+        account = await self.getAccountBySessionName(session_name)
+        if (
+            account.target_chat != "Не указан"
+            and account.message != "Не указано"
+            and account.prompt != "Не указан"
+        ):
+            if account.advertising_channels and len(account.advertising_channels) > 0:
+                if os.path.isfile(account.session_file_path):
+                    return True
+
+        return False

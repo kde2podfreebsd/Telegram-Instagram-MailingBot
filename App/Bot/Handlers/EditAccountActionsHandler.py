@@ -453,3 +453,86 @@ async def delete_account(message):
             await _editAccountsMenu(message=message)
         else:
             await _errorDeleteAccountChat(message=message)
+
+
+# --------------Edit account status--------------
+async def _sendChangeStatusMenu(message):
+    async with async_session() as session:
+
+        await message_context_manager.delete_msgId_from_help_menu_dict(
+            chat_id=message.chat.id
+        )
+        account_dal = AccountDAL(session)
+        account = await account_dal.getAccountBySessionName(
+            session_name=account_context.account_name[message.chat.id]
+        )
+        status = account.status
+        ready_status = await account_dal.check_account_conditions(
+            session_name=account_context.account_name[message.chat.id]
+        )
+
+        if not ready_status:
+            msg = await bot.send_message(
+                chat_id=message.chat.id,
+                text=MarkupBuilder.not_ready_change_status(status=status),
+                reply_markup=MarkupBuilder.back_to_edit_menu(
+                    account_name=account_context.account_name[message.chat.id]
+                ),
+                parse_mode="HTML",
+            )
+
+            await message_context_manager.add_msgId_to_help_menu_dict(
+                chat_id=message.chat.id, msgId=msg.message_id
+            )
+
+        else:
+            msg = await bot.send_message(
+                chat_id=message.chat.id,
+                text=MarkupBuilder.ready_change_status(status=status),
+                reply_markup=MarkupBuilder.change_status_menu(
+                    session_name=account_context.account_name[message.chat.id]
+                ),
+                parse_mode="HTML",
+            )
+
+            await message_context_manager.add_msgId_to_help_menu_dict(
+                chat_id=message.chat.id, msgId=msg.message_id
+            )
+
+
+async def _set_status_on(message):
+    await message_context_manager.delete_msgId_from_help_menu_dict(
+        chat_id=message.chat.id
+    )
+
+    msg = await bot.send_message(
+        chat_id=message.chat.id,
+        text="✅Текущий статус аккаунта: <b>Включен</b>",
+        reply_markup=MarkupBuilder.back_to_edit_menu(
+            account_name=account_context.account_name[message.chat.id]
+        ),
+        parse_mode="HTML",
+    )
+
+    await message_context_manager.add_msgId_to_help_menu_dict(
+        chat_id=message.chat.id, msgId=msg.message_id
+    )
+
+
+async def _set_status_off(message):
+    await message_context_manager.delete_msgId_from_help_menu_dict(
+        chat_id=message.chat.id
+    )
+
+    msg = await bot.send_message(
+        chat_id=message.chat.id,
+        text="❌Текущий статус аккаунта: <b>Выключен</b>",
+        reply_markup=MarkupBuilder.back_to_edit_menu(
+            account_name=account_context.account_name[message.chat.id]
+        ),
+        parse_mode="HTML",
+    )
+
+    await message_context_manager.add_msgId_to_help_menu_dict(
+        chat_id=message.chat.id, msgId=msg.message_id
+    )

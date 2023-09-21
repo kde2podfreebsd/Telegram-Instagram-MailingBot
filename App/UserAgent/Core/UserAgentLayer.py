@@ -56,6 +56,7 @@ async def main():
                 account = await account_dal.getAccountBySessionName(client.session_name)
                 if account and account.advertising_channels:
                     for channel in account.advertising_channels:
+                        print(channel)
                         message = account.message
                         delay = random.uniform(1, 3)
                         task = asyncio.create_task(
@@ -64,7 +65,7 @@ async def main():
                         tasks.append(task)
 
             await asyncio.gather(*tasks)
-            await asyncio.sleep(15)
+            await asyncio.sleep(10)
 
 
 if __name__ == "__main__":
