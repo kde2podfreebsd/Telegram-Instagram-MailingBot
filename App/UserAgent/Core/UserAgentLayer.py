@@ -31,7 +31,6 @@ async def send_message(user_agent_core, chat, message, delay):
     tracker = MessageTracker()
 
     await user_agent_core.joinChat(chat)
-    print(f"Join in {chat}")
     await asyncio.sleep(delay)
 
     last_message_id = tracker.get_last_message_id(user_agent_core.session_name, chat)
