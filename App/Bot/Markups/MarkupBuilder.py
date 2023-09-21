@@ -11,6 +11,7 @@ from App.Database.session import async_session
 
 class MarkupBuilder(object):
 
+    _change_status = None
     _adv_chat_added = None
     _sendAddAdvChatText = None
     _errorSetTargetChannel = None
@@ -311,6 +312,41 @@ class MarkupBuilder(object):
     def account_deleted(cls):
         cls._account_deleted = "✅<b>Аккаунт и сессия удалены</b>"
         return cls._account_deleted
+
+    @classmethod
+    def not_ready_change_status(cls, status: bool):
+        cls._change_status = f"❌<b>Не все поля заполнены, аккаунт не готов для использования</b>\nТекущий статус использования аккаунта: <b>{status}</b>"
+        return cls._change_status
+
+    @classmethod
+    def ready_change_status(cls, status: bool):
+        cls._change_status = f"✅<b>Аккаунт готов для использования</b>\nТекущий статус использования аккаунта: <b>{status}</b>"
+        return cls._change_status
+
+    @classmethod
+    def change_status_menu(cls, session_name: str):
+        return types.InlineKeyboardMarkup(
+            row_width=1,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        text="✅Включить аккаунт",
+                        callback_data=f"set_status_on#{session_name}",
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        text="❌Выключить аккаунт",
+                        callback_data=f"set_status_off#{session_name}",
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        text="🔙Назад", callback_data=f"back_to_edit_menu#{session_name}"
+                    )
+                ],
+            ],
+        )
 
     @classmethod
     def back_to_menu(cls):

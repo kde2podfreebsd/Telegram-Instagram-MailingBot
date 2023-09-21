@@ -31,6 +31,7 @@ async def send_message(user_agent_core, chat, message, delay):
     tracker = MessageTracker()
 
     await user_agent_core.joinChat(chat)
+    print(f"Join in {chat}")
     await asyncio.sleep(delay)
 
     last_message_id = tracker.get_last_message_id(user_agent_core.session_name, chat)
@@ -56,6 +57,7 @@ async def main():
                 account = await account_dal.getAccountBySessionName(client.session_name)
                 if account and account.advertising_channels:
                     for channel in account.advertising_channels:
+                        print(channel)
                         message = account.message
                         delay = random.uniform(1, 3)
                         task = asyncio.create_task(
@@ -64,7 +66,7 @@ async def main():
                         tasks.append(task)
 
             await asyncio.gather(*tasks)
-            await asyncio.sleep(15)
+            await asyncio.sleep(10)
 
 
 if __name__ == "__main__":

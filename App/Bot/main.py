@@ -8,10 +8,13 @@ from telebot.asyncio_filters import StateFilter
 from App.Bot.Handlers.EditAccountActionsHandler import _sendAddAdvChatText
 from App.Bot.Handlers.EditAccountActionsHandler import _sendChangeAccountMessageText
 from App.Bot.Handlers.EditAccountActionsHandler import _sendChangePromptText
+from App.Bot.Handlers.EditAccountActionsHandler import _sendChangeStatusMenu
 from App.Bot.Handlers.EditAccountActionsHandler import _sendChangeTargetChannelText
 from App.Bot.Handlers.EditAccountActionsHandler import _sendDeleteAccountText
 from App.Bot.Handlers.EditAccountActionsHandler import _sendReloadChatGPTMessageText
 from App.Bot.Handlers.EditAccountActionsHandler import _sendRemoveAdvChatText
+from App.Bot.Handlers.EditAccountActionsHandler import _set_status_off
+from App.Bot.Handlers.EditAccountActionsHandler import _set_status_on
 from App.Bot.Handlers.EditAccountsMenuHandler import _editAccountsMenu
 from App.Bot.Handlers.EditAccountsMenuHandler import _showAccountActions
 from App.Bot.Handlers.LogsHandler import _sendLog
@@ -23,6 +26,8 @@ from App.Config import account_context
 from App.Config import bot
 from App.Config import message_context_manager
 from App.Config import singleton
+from App.Database.DAL.AccountDAL import AccountDAL
+from App.Database.session import async_session
 
 
 @singleton
@@ -128,6 +133,8 @@ class Bot:
                 chat_id=call.message.chat.id, account_name=account_name
             )
 
+            await _sendChangeStatusMenu(call.message)
+
         if "reload_chatgpt_message" in call.data:
             account_name = call.data.split("#")[-1]
             account_context.updateAccountName(
@@ -143,6 +150,30 @@ class Bot:
             )
 
             await _sendDeleteAccountText(call.message)
+
+        if "set_status_on" in call.data:
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+
+            async with async_session() as session:
+                account_dal = AccountDAL(session)
+                await account_dal.updateStatus(session_name=account_name, status=True)
+
+            await _set_status_on(call.message)
+
+        if "set_status_off" in call.data:
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+
+            async with async_session() as session:
+                account_dal = AccountDAL(session)
+                await account_dal.updateStatus(session_name=account_name, status=False)
+
+            await _set_status_off(call.message)
 
     @staticmethod
     async def polling():
