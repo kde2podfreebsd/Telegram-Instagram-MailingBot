@@ -39,26 +39,26 @@ async def get_db() -> Generator:
         await session.close()
 
 async def addMembersToDB(usernames):
-        db = await getMembersFromTg(usernames, 5) # limit = 5
-        async with async_session() as session:
-            for member in db:
-                chatMember = ChatMember()
-                try:
-                    chatMember.first_name = member[0]
-                except TypeError:
-                    pass
-                try:
-                    chatMember.last_name = member[1]
-                except TypeError:
-                    pass
-                try:
-                    chatMember.username = member[2]
-                except TypeError:
-                    pass
-                try:
-                    chatMember.is_premium = member[3]
-                except TypeError:
-                    pass
-                session.add(chatMember)
-            await session.commit()
-        await session.close()
+    db = await getMembersFromTg(usernames, 5) # limit = 5
+    async with async_session() as session:
+        for member in db:
+            chatMember = ChatMember()
+            try:
+                chatMember.first_name = member[0]
+            except TypeError:
+                pass
+            try:
+                chatMember.last_name = member[1]
+            except TypeError:
+                pass
+            try:
+                chatMember.username = member[2]
+            except TypeError:
+                pass
+            try:
+                chatMember.is_premium = member[3]
+            except TypeError:
+                pass
+            session.add(chatMember)
+        await session.commit()
+    await session.close()
