@@ -48,8 +48,9 @@ async def main():
         account_dal = AccountDAL(session)
 
         while True:
+            #here fix
             accounts = await account_dal.getSessionNamesWithTrueStatus()
-            userAgent_clients = [UserAgentCore(x) for x in accounts]
+            userAgent_clients = [UserAgentCore(x) for x in accounts] #
 
             tasks = []
             for client in userAgent_clients:

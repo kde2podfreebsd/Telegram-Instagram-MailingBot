@@ -18,3 +18,12 @@ class Account(Base):
     prompt = Column(String, nullable=True, default="Не указан")
     advertising_channels = Column(MutableList.as_mutable(ARRAY(String)), nullable=True)
     status = Column(Boolean, nullable=False, default=False)
+
+class ChatMember(Base):
+    __tablename__ = "telegram_chat_members"
+    
+    id = Column(Integer, primary_key=True)
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
+    username = Column(String, nullable=True)
+    is_premium = Column(Boolean, nullable=False)
