@@ -194,8 +194,7 @@ class MarkupBuilder(object):
             one_time_keyboard=True,
         ).add(
             types.KeyboardButton("🤖 Добавить аккаунт"),
-            types.KeyboardButton("🛠 Редактировать аккаунты"),
-            types.KeyboardButton("📝 Логи"),
+            types.KeyboardButton("🛠 Редактировать аккаунты")
         )
         return menu
 

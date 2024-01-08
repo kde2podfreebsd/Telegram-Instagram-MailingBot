@@ -5,17 +5,14 @@ from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy import select
-from App.Database.Models import ChatMember
-from DAL.getMembersFromTg import getMembersFromTg
 
 load_dotenv()
 
 POSTGRES_USER = str(os.getenv("POSTGRES_USER"))
 POSTGRES_PASSWORD = str(os.getenv("POSTGRES_PASSWORD"))
 # POSTGRES_HOST = "db"
-POSTGRES_HOST = "localhost"
-POSTGRES_PORT = 5433
+POSTGRES_HOST = "172.26.0.2"
+POSTGRES_PORT = 5432
 POSTGRES_DB = str(os.getenv("POSTGRES_DB"))
 
 
@@ -37,28 +34,3 @@ async def get_db() -> Generator:
         yield session
     finally:
         await session.close()
-
-async def addMembersToDB(usernames):
-    db = await getMembersFromTg(usernames, 5) # limit = 5
-    async with async_session() as session:
-        for member in db:
-            chatMember = ChatMember()
-            try:
-                chatMember.first_name = member[0]
-            except TypeError:
-                pass
-            try:
-                chatMember.last_name = member[1]
-            except TypeError:
-                pass
-            try:
-                chatMember.username = member[2]
-            except TypeError:
-                pass
-            try:
-                chatMember.is_premium = member[3]
-            except TypeError:
-                pass
-            session.add(chatMember)
-        await session.commit()
-    await session.close()

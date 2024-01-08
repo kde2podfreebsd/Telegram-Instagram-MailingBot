@@ -11,17 +11,18 @@ from App.Logger import ApplicationLogger
 
 logger = ApplicationLogger()
 
+
 class UserAgentCore:
     def __init__(self, session_name: str):
         self.session_name = session_name
-        self.app = TelegramClient(f"{sessions_dirPath}/{session_name}")
+        self.app = TelegramClient(f"{sessions_dirPath}/{session_name}", api_id=123, api_hash="123")
         logger.log_info(
             f"Init UserAgentCore on {session_name} session. Path to session {sessions_dirPath}/{session_name}"
         )
 
-    @staticmethod
+    @classmethod
     @logger.exception_handler
-    async def createSession(session_name: str, api_id: int, api_hash: str):
+    async def createSession(cls, session_name: str, api_id: int, api_hash: str):
         async with TelegramClient(
             f"{sessions_dirPath}/{session_name}", api_id, api_hash
         ) as app:
@@ -38,11 +39,11 @@ class UserAgentCore:
         # parseMode: Optional[
         #     pyrogram.enums.ParseMode
         # ] = pyrogram.enums.ParseMode.MARKDOWN,
-        parseMode: 'md', 
+        parseMode='md',
     ):
         async with self.app as app:
             output = await app.send_message(
-                chat_id=chat, text=message, parse_mode=parseMode
+                chat, message, parse_mode=parseMode
             )
             logger.log_info(f"Send message to: {chat}. Message: {message}")
             return {"msg_ids": output.id, "chat": chat}
@@ -74,14 +75,14 @@ class UserAgentCore:
             return await app.get_me()
 
 
-if __name__ == "__main__":
-    uvloop.install()
-
-    asyncio.run(UserAgentCore.createSession(
-        session_name="",
-        api_id=1,
-        api_hash=""
-    ))
+# if __name__ == "__main__":
+#     uvloop.install()
+#
+#     asyncio.run(UserAgentCore.createSession(
+#         session_name="session",
+#         api_id=,
+#         api_hash=""
+#     ))
 
 
 #----------unnecessary-------------
