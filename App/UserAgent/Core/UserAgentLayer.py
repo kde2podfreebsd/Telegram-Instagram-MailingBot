@@ -7,6 +7,7 @@ from App.Config import singleton
 from App.Database.DAL.AccountDAL import AccountDAL
 from App.Database.session import async_session
 from App.UserAgent.Core.UserAgentCore import UserAgentCore
+# import aioschedule
 
 
 @singleton
@@ -27,46 +28,42 @@ class MessageTracker:
             del self.message_ids[session_name][chat]
 
 
-async def send_message(user_agent_core, chat, message, delay):
-    tracker = MessageTracker()
-
-    await user_agent_core.joinChat(chat)
-    await asyncio.sleep(delay)
-
-    last_message_id = tracker.get_last_message_id(user_agent_core.session_name, chat)
-    if last_message_id:
-        await user_agent_core.deleteMsg(chat, last_message_id)
-        tracker.clear_last_message_id(user_agent_core.session_name, chat)
-
-    response = await user_agent_core.sendMsg(chat, message)
-    tracker.record_message(user_agent_core.session_name, chat, response["msg_ids"])
-
-
-async def main():
+async def mainLayer():
     async with async_session() as session:
-        uvloop.install()
         account_dal = AccountDAL(session)
+        message_tracker = MessageTracker()
+
+        uvloop.install()
 
         while True:
             accounts = await account_dal.getSessionNamesWithTrueStatus()
+
             userAgent_clients = [UserAgentCore(x) for x in accounts]
 
             tasks = []
             for client in userAgent_clients:
                 account = await account_dal.getAccountBySessionName(client.session_name)
                 if account and account.advertising_channels:
-                    for channel in account.advertising_channels:
-                        print(channel)
-                        message = account.message
-                        delay = random.uniform(1, 3)
-                        task = asyncio.create_task(
-                            send_message(client, channel, message, delay)
-                        )
-                        tasks.append(task)
+                    for chats in account.advertising_channels:
+                        # Получение последнего ID сообщения и очистка его
+                        last_message_id = message_tracker.get_last_message_id(client.session_name, chats)
+                        if last_message_id:
+                            await client.deleteMsg(chat=chats, message_id=last_message_id)
+                            message_tracker.clear_last_message_id(client.session_name, chats)
 
-            await asyncio.gather(*tasks)
+                        msg = await client.sendMsg(chat=chats, message=account.message)
+
+                        message_tracker.record_message(client.session_name, chats, msg['msg_ids'])
+
+                        print(msg)
+
+                        delay = random.randint(5, 10)
+                        print(f"delay: {delay} for account: {client.session_name}")
+                        # await asyncio.sleep(delay)
+
+                        # tasks.append(task)
             await asyncio.sleep(10)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(mainLayer())

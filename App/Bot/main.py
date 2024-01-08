@@ -17,7 +17,6 @@ from App.Bot.Handlers.EditAccountActionsHandler import _set_status_off
 from App.Bot.Handlers.EditAccountActionsHandler import _set_status_on
 from App.Bot.Handlers.EditAccountsMenuHandler import _editAccountsMenu
 from App.Bot.Handlers.EditAccountsMenuHandler import _showAccountActions
-from App.Bot.Handlers.LogsHandler import _sendLog
 from App.Bot.Handlers.MainMenuHandler import _mainMenu
 from App.Bot.Handlers.NewAccountHandler import _newAccountMenu
 from App.Bot.Markups import MarkupBuilder  # noqa
@@ -44,9 +43,6 @@ class Bot:
     @staticmethod
     @bot.message_handler(content_types=["text"])
     async def HandlerTextMiddleware(message):
-        if message.text == "📝 Логи":
-            await _sendLog(message)
-
         if message.text == "🔙Назад":
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=message.chat.id
@@ -63,6 +59,7 @@ class Bot:
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=message.chat.id
             )
+
             await _editAccountsMenu(message)
 
     @staticmethod

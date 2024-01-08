@@ -11,7 +11,7 @@ load_dotenv()
 POSTGRES_USER = str(os.getenv("POSTGRES_USER"))
 POSTGRES_PASSWORD = str(os.getenv("POSTGRES_PASSWORD"))
 # POSTGRES_HOST = "db"
-POSTGRES_HOST = "172.19.0.2"
+POSTGRES_HOST = "172.26.0.2"
 POSTGRES_PORT = 5432
 POSTGRES_DB = str(os.getenv("POSTGRES_DB"))
 
@@ -22,7 +22,7 @@ engine = create_async_engine(
     DATABASE_URL,
     future=True,
     echo=False,
-    execution_options={"isolation_level": "AUTOCOMMIT"},
+    execution_options={"isolation_level": "AUTOCOMMIT"}, 
 )
 
 async_session = async_sessionmaker(engine, expire_on_commit=True, class_=AsyncSession)

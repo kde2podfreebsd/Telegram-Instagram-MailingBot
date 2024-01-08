@@ -3,7 +3,8 @@ import os
 from .bot import bot
 
 basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-sessions_dirPath = f"{basedir}/UserAgent/sessions"
+sessions_dirPath = os.path.join(basedir, "UserAgent", "sessions")
+print(sessions_dirPath)
 logs_dirPath = f"{basedir}/Logger/logs"
 
 

@@ -156,7 +156,7 @@ class MarkupBuilder(object):
             out_message = f"""
 🤖Аккаунт: {account_username}
 🎯Целевой канал: {target_chat}
-🆙Статус: {"Актвиен" if account.status else "Не активен"}
+🆙Статус: {"Активен" if account.status else "Не активен"}
 ✍️ChatGPT prompt:
 -------------------
 {prompt}
@@ -194,8 +194,7 @@ class MarkupBuilder(object):
             one_time_keyboard=True,
         ).add(
             types.KeyboardButton("🤖 Добавить аккаунт"),
-            types.KeyboardButton("🛠 Редактировать аккаунты"),
-            types.KeyboardButton("📝 Логи"),
+            types.KeyboardButton("🛠 Редактировать аккаунты")
         )
         return menu
 
