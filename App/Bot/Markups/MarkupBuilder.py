@@ -51,11 +51,70 @@ class MarkupBuilder(object):
 
             mp.add(
                 types.InlineKeyboardButton(
-                    text="🔙Назад", callback_data="back_to_main_menu"
+                    text="🔙Назад", callback_data="back_to_service_menu"
                 )
             )
 
             return mp
+
+    @classmethod
+    def EditVisualOptions(cls):
+        return types.InlineKeyboardMarkup(row_width=2,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton("Сменить фото профиля", callback_data="chng_pfp")
+                ],
+                [
+                    types.InlineKeyboardButton("Поменять first_name", callback_data="chng_first_name")
+                ],
+                [
+                    types.InlineKeyboardButton("Поменять last_name", callback_data="chng_last_name")
+                ],
+                [
+                    types.InlineKeyboardButton("Поменять username", callback_data="chng_username")
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "🔙Назад",
+                        callback_data="back_to_service_menu"
+                    )
+                ]
+            ]
+        )
+
+
+    @classmethod 
+    #оч странно, что не работает с text="text"
+    def AccountListServices(cls):
+        return types.InlineKeyboardMarkup(
+            row_width=2,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        "🎨Визуальный конфиг аккаунта",
+                        callback_data="vis_cfg"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "📝Спам рассылка телеграма",
+                        callback_data="edit_acc_menu"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "📷Спам рассылка инстаграма",
+                        callback_data="spam_inst"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "🔙Назад",
+                        callback_data="back_to_main_menu"
+                    )
+                ]
+            ]
+        )
 
     @classmethod
     def AccountEditActions(cls, account_name):
@@ -112,7 +171,8 @@ class MarkupBuilder(object):
                 ],
                 [
                     types.InlineKeyboardButton(
-                        text="🔙Назад", callback_data=f"back_to_editAccounts_menu"
+                        text="🔙Назад", 
+                        callback_data="edit_acc_menu"
                     )
                 ],
             ],
@@ -215,6 +275,12 @@ class MarkupBuilder(object):
     def new_account_state1(cls):
         cls._new_account_state1 = "📩Отправь файл сессии акаунта с уникальным именем в формате: <b>account_name.session</b>"
         return cls._new_account_state1
+
+    @classmethod
+    @property
+    def serviceMenuText(cls):
+        cls.serviceMenuText = "Выбирите нужный сервис"
+        return cls.serviceMenuText
 
     @classmethod
     @property
