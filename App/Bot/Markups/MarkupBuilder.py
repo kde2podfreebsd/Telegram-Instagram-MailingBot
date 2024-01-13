@@ -51,54 +51,21 @@ class MarkupBuilder(object):
 
             mp.add(
                 types.InlineKeyboardButton(
-                    text="🔙Назад", callback_data="back_to_service_menu"
+                    text="🔙Назад", callback_data="back_to_spam_tg"
                 )
             )
 
             return mp
 
-    @classmethod
-    def EditVisualOptions(cls):
-        return types.InlineKeyboardMarkup(row_width=2,
-            keyboard=[
-                [
-                    types.InlineKeyboardButton("Сменить фото профиля", callback_data="chng_pfp")
-                ],
-                [
-                    types.InlineKeyboardButton("Поменять first_name", callback_data="chng_first_name")
-                ],
-                [
-                    types.InlineKeyboardButton("Поменять last_name", callback_data="chng_last_name")
-                ],
-                [
-                    types.InlineKeyboardButton("Поменять username", callback_data="chng_username")
-                ],
-                [
-                    types.InlineKeyboardButton(
-                        "🔙Назад",
-                        callback_data="back_to_service_menu"
-                    )
-                ]
-            ]
-        )
-
-
     @classmethod 
-    #оч странно, что не работает с text="text"
     def AccountListServices(cls):
         return types.InlineKeyboardMarkup(
             row_width=2,
             keyboard=[
                 [
                     types.InlineKeyboardButton(
-                        "🎨Визуальный конфиг аккаунта",
-                        callback_data="vis_cfg"
-                    )
-                ],
-                [
-                    types.InlineKeyboardButton(
                         "📝Спам рассылка телеграма",
-                        callback_data="edit_acc_menu"
+                        callback_data="spam_tg"
                     )
                 ],
                 [
@@ -115,11 +82,143 @@ class MarkupBuilder(object):
                 ]
             ]
         )
+    
+    @classmethod
+    async def AccountListKeyboardVisCfg(cls):
+        async with async_session() as session:
+            account_dal = AccountDAL(session)
+            acc_out = await account_dal.getAllAccounts()
+            ACCOUNTS = [
+                {
+                    "session_name": os.path.splitext(
+                        os.path.basename(x.session_file_path)
+                    )[0]
+                }
+                for x in acc_out
+            ]
+
+            mp = types.InlineKeyboardMarkup(row_width=2)
+
+            for account in ACCOUNTS:
+                mp.add(
+                    types.InlineKeyboardButton(
+                        text=account["session_name"],
+                        callback_data=f"viscfg_account#{account['session_name']}",
+                    )
+                )
+
+            mp.add(
+                types.InlineKeyboardButton(
+                    text="🔙Назад", callback_data="back_to_spam_tg"
+                )
+            )
+
+            return mp
+
+    @classmethod 
+    def SpamTgActionsList(cls):
+        return types.InlineKeyboardMarkup(
+            row_width=2,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        "Редактировать визуальный конфиг аккаунта",
+                        callback_data="vis_cfg"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "Редактировать аккаунт",
+                        callback_data="acc_edit"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "Просмотр сториз",
+                        callback_data="stories"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "🔙Назад",
+                        callback_data="back_to_service_menu"
+                    )
+                ]
+            ]
+        )
+
+    @classmethod
+    def EditVisualOptions(cls, account_name):
+        return types.InlineKeyboardMarkup(row_width=2,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        "Сменить фото профиля", 
+                        callback_data=f"chng_pfp#{account_name}"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "Поменять first_name", 
+                        callback_data=f"chng_first_name#{account_name}"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "Поменять last_name", 
+                        callback_data=f"chng_last_name#{account_name}"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "Поменять username", 
+                        callback_data=f"chng_username#{account_name}"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "🔙Назад",
+                        callback_data="back_to_vis_cfg"
+                    )
+                ]
+            ]
+        )
+    
+    @classmethod
+    def StoriesMenu(cls):
+        return types.InlineKeyboardMarkup(row_width=2,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        "Запуск просмотра сториз", 
+                        callback_data="stories_service"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "Обновление базы данных премиум пользователей", 
+                        callback_data="db_update"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "Сброс базы данных", 
+                        callback_data="drop_db"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "🔙Назад",
+                        callback_data="back_to_spam_tg"
+                    )
+                ]
+            ]
+        )
 
     @classmethod
     def AccountEditActions(cls, account_name):
         return types.InlineKeyboardMarkup(
-            row_width=2,
+            row_width=3,
             keyboard=[
                 [
                     types.InlineKeyboardButton(
@@ -172,7 +271,7 @@ class MarkupBuilder(object):
                 [
                     types.InlineKeyboardButton(
                         text="🔙Назад", 
-                        callback_data="edit_acc_menu"
+                        callback_data="back_to_acc_edit"
                     )
                 ],
             ],
@@ -254,7 +353,7 @@ class MarkupBuilder(object):
             one_time_keyboard=True,
         ).add(
             types.KeyboardButton("🤖 Добавить аккаунт"),
-            types.KeyboardButton("🛠 Редактировать аккаунты")
+            types.KeyboardButton("🛠 Выбрать сервис")
         )
         return menu
 
@@ -438,3 +537,42 @@ class MarkupBuilder(object):
                 ]
             ],
         )
+
+    @classmethod
+    def back_to_vis_cfg_menu(cls, account_name):
+        return types.InlineKeyboardMarkup(
+            row_width=1,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        text="🔙Назад", callback_data=f"back_to_viscfg_account#{account_name}"
+                    )
+                ]
+            ],
+        )
+    
+    @classmethod
+    @property
+    def editFirstNameText(cls):
+        cls.editFirstNameText = "<b>Введите текст, на который ты хочешь поменять first_name этого аккаунта сессии:</b>"
+        return cls.editFirstNameText
+
+    @classmethod
+    @property
+    def editLastNameText(cls):
+        cls.editLastNameText = "<b>Введите текст, на который ты хочешь поменять last_name этого аккаунта сессии:</b>"
+        return cls.editLastNameText
+    
+    @classmethod
+    @property
+    def editUsernameText(cls):
+        cls.editUsernameText = "<b>Введите текст, на который ты хочешь поменять username этого аккаунта сессии:</b>"
+        return cls.editUsernameText
+    
+    @classmethod
+    @property
+    def changeProfilePictureText(cls):
+        cls.changeProfilePictureText = "<b>Загрузи фотографию в формате .jpg, .jpeg, на которую хочешь изменить фотографию аккаунта:</b>"
+        return cls.changeProfilePictureText
+
+

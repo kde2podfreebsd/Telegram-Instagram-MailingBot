@@ -7,13 +7,15 @@ from App.Config import sessions_dirPath
 from App.Database.DAL.AccountDAL import AccountDAL
 from App.Database.session import async_session
 
-async def _visualConfig(message):
+async def _spamTg(message):
+
     msg = await bot.send_message(message.chat.id, 
         MarkupBuilder.serviceMenuText,
-        reply_markup=MarkupBuilder.EditVisualOptions(),
+        reply_markup=MarkupBuilder.SpamTgActionsList(),
         parse_mode="MarkdownV2"
     )
     
     await message_context_manager.add_msgId_to_help_menu_dict(
         chat_id=message.chat.id, msgId=msg.message_id
     )
+
