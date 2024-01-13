@@ -25,8 +25,12 @@ from App.Bot.Handlers.EditAccountVisualActionsHandler import _sendChangeLastName
 from App.Bot.Handlers.EditAccountVisualActionsHandler import _sendChangeUsernameText
 from App.Bot.Handlers.EditAccountVisualActionsHandler import _sendChangeProfilePictureText
 
+
 from App.Bot.Handlers.SpamTgHandler import _spamTg
-from App.Bot.Handlers.StoriesHandler import _stories
+
+from App.Bot.Handlers.StoriesMenuHandler import _stories
+from App.Bot.Handlers.StoriesMenuHandler import _accountSessionsListStories
+from App.Bot.Handlers.StoriesActionsHandler import _UpdateDb
 
 from App.Bot.Handlers.EditAccountsMenuHandler import _editAccountsMenu
 from App.Bot.Handlers.EditAccountsMenuHandler import _showAccountActions
@@ -116,12 +120,6 @@ class Bot:
             account_name = call.data.split("#")[-1]
             
             await _visualConfig(account_name=account_name, message=call.message)
-    
-        if call.data == "stories":
-            await message_context_manager.delete_msgId_from_help_menu_dict(
-                chat_id=call.message.chat.id
-            )
-            await _stories(message=call.message)
 
         if "edit_account" in call.data or "back_to_edit_menu" in call.data:
             await bot.delete_state(
@@ -129,11 +127,40 @@ class Bot:
             )
             account_name = call.data.split("#")[-1]
             
-            
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=call.message.chat.id
             )
             await _showAccountActions(message=call.message, account_name=account_name)
+
+        # ------------------stories------------------
+        
+        if call.data == "look_stories" or call.data == "back_to_look_stories":
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            await _accountSessionsListStories(message=call.message)
+
+        if "acc_stories" in call.data or "back_to_stories" in call.data:
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            
+            await _stories(message=call.message, account_name=account_name)
+        
+
+        # --------------stories actions--------------
+        
+        if "db_update" in call.data:
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id,
+                account_name=account_name
+            )
+            await _UpdateDb(message=call.message)
 
 
         # -------editing visual account config-------

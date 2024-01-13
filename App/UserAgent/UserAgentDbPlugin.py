@@ -1,28 +1,29 @@
-from telethon import TelegramClient
-from telethon import errors
+from App.Database.DAL.AccountDAL import AccountDAL
+from App.Database.session import async_session
+from App.UserAgent.Core.UserAgentCore import UserAgentCore
+import asyncio
 
-api_id = 1
-api_hash = ""
-session_name = "test"
-client = TelegramClient(session_name, api_id, api_hash)
-
-
-async def getMembersFromTg(usernames, limit):
-    async with client:
+async def get_members_from_tg(session_name, usernames, limit=None):
+    UserAgent = UserAgentCore(session_name=session_name)
+    async with UserAgent.app as client:
         db = []
         for username in usernames:
-            try: 
-                group_members = await client.get_participants(username, limit=limit)
-                for member in group_members:
-                    if (member.username):
-                        db.append([member.first_name,
+            total_members = []
+            async for participant in client.iter_participants(username, limit=limit):
+                total_members.append(participant)
+            for member in total_members:
+                if member.username and member.premium:
+                    db.append([
+                        member.first_name,
                         member.last_name,
                         member.username,
-                        member.premium])
-            except errors.rpcerrorlist.ChatAdminRequiredError:
-                pass
+                        member.premium
+                    ])
     return db
 
 
+if __name__ == "__main__":
+    db = asyncio.run(get_members_from_tg("1", ["fortnite9", "wildt"]))
+    print(db)
 
 

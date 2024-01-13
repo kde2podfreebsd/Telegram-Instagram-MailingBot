@@ -63,9 +63,6 @@ async def mainLayer():
                         delay = random.randint(5, 10)
                         print(f"delay: {delay} for account: {client.session_name}")
                         aioschedule.every(1).to(delay).seconds.do(sleep)
-                        # await asyncio.sleep(delay)
-
-                        # tasks.append(task)
             await asyncio.sleep(10)
 
 

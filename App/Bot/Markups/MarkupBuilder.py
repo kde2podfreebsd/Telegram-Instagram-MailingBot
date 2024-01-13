@@ -114,6 +114,38 @@ class MarkupBuilder(object):
             )
 
             return mp
+    
+    @classmethod
+    async def AccountListKeyboardStroies(cls):
+        async with async_session() as session:
+            account_dal = AccountDAL(session)
+            acc_out = await account_dal.getAllAccounts()
+            ACCOUNTS = [
+                {
+                    "session_name": os.path.splitext(
+                        os.path.basename(x.session_file_path)
+                    )[0]
+                }
+                for x in acc_out
+            ]
+
+            mp = types.InlineKeyboardMarkup(row_width=2)
+
+            for account in ACCOUNTS:
+                mp.add(
+                    types.InlineKeyboardButton(
+                        text=account["session_name"],
+                        callback_data=f"acc_stories#{account['session_name']}",
+                    )
+                )
+
+            mp.add(
+                types.InlineKeyboardButton(
+                    text="🔙Назад", callback_data="back_to_spam_tg"
+                )
+            )
+
+            return mp
 
     @classmethod 
     def SpamTgActionsList(cls):
@@ -135,7 +167,7 @@ class MarkupBuilder(object):
                 [
                     types.InlineKeyboardButton(
                         "Просмотр сториз",
-                        callback_data="stories"
+                        callback_data="look_stories"
                     )
                 ],
                 [
@@ -185,31 +217,31 @@ class MarkupBuilder(object):
         )
     
     @classmethod
-    def StoriesMenu(cls):
+    def StoriesMenu(cls, account_name):
         return types.InlineKeyboardMarkup(row_width=2,
             keyboard=[
                 [
                     types.InlineKeyboardButton(
                         "Запуск просмотра сториз", 
-                        callback_data="stories_service"
+                        callback_data=f"stories_service#{account_name}"
                     )
                 ],
                 [
                     types.InlineKeyboardButton(
                         "Обновление базы данных премиум пользователей", 
-                        callback_data="db_update"
+                        callback_data=f"db_update#{account_name}"
                     )
                 ],
                 [
                     types.InlineKeyboardButton(
                         "Сброс базы данных", 
-                        callback_data="drop_db"
+                        callback_data=f"drop_db#{account_name}"
                     )
                 ],
                 [
                     types.InlineKeyboardButton(
                         "🔙Назад",
-                        callback_data="back_to_spam_tg"
+                        callback_data=f"back_to_look_stories"
                     )
                 ]
             ]
@@ -550,7 +582,26 @@ class MarkupBuilder(object):
                 ]
             ],
         )
+
+    @classmethod
+    def back_to_stories_menu(cls, account_name):
+        return types.InlineKeyboardMarkup(
+            row_width=1,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        text="🔙Назад", callback_data=f"back_to_stories#{account_name}"
+                    )
+                ]
+            ],
+        )
     
+    @classmethod
+    @property
+    def updateDbText(cls):
+        cls.updateDbText = "База данных пользователей с премиум аккаунтами была обновлена."
+        return cls.updateDbText
+
     @classmethod
     @property
     def editFirstNameText(cls):
