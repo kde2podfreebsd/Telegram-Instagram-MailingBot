@@ -160,7 +160,7 @@ class MarkupBuilder(object):
                 ],
                 [
                     types.InlineKeyboardButton(
-                        "Редактировать аккаунт",
+                        "Настроить спам рассылку",
                         callback_data="acc_edit"
                     )
                 ],
@@ -598,9 +598,21 @@ class MarkupBuilder(object):
     
     @classmethod
     @property
+    def storiesServiceText(cls):
+        cls.storiesServiceText = "Проставление реакций сториз было произведено успешно."
+        return cls.storiesServiceText
+
+    @classmethod
+    @property
     def updateDbText(cls):
         cls.updateDbText = "База данных пользователей с премиум аккаунтами была обновлена."
         return cls.updateDbText
+    
+    @classmethod
+    @property
+    def deleteDbText(cls):
+        cls.deleteDbText = "База данных пользователей с премиум аккаунтами была удалена."
+        return cls.deleteDbText
 
     @classmethod
     @property

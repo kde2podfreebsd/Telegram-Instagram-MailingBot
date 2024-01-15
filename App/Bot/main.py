@@ -30,7 +30,9 @@ from App.Bot.Handlers.SpamTgHandler import _spamTg
 
 from App.Bot.Handlers.StoriesMenuHandler import _stories
 from App.Bot.Handlers.StoriesMenuHandler import _accountSessionsListStories
-from App.Bot.Handlers.StoriesActionsHandler import _UpdateDb
+from App.Bot.Handlers.StoriesActionsHandler import _updateDb
+from App.Bot.Handlers.StoriesActionsHandler import _deleteDb
+from App.Bot.Handlers.StoriesActionsHandler import _startStories
 
 from App.Bot.Handlers.EditAccountsMenuHandler import _editAccountsMenu
 from App.Bot.Handlers.EditAccountsMenuHandler import _showAccountActions
@@ -160,7 +162,29 @@ class Bot:
                 chat_id=call.message.chat.id,
                 account_name=account_name
             )
-            await _UpdateDb(message=call.message)
+            await _updateDb(message=call.message)
+        
+        if "drop_db" in call.data:
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id,
+                account_name=account_name
+            )
+            await _deleteDb(message=call.message)
+        
+        if "stories_service" in call.data:
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id,
+                account_name=account_name
+            )
+            await _startStories(message=call.message)
 
 
         # -------editing visual account config-------

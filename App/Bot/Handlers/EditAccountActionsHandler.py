@@ -13,6 +13,7 @@ from App.Config import bot
 from App.Config import message_context_manager
 from App.Config import sessions_dirPath
 from App.Database.DAL.AccountDAL import AccountDAL
+from App.Database.DAL.ChatMemberDAL import ChatMemberDAL
 from App.Database.session import async_session
 
 
@@ -423,16 +424,18 @@ async def _errorDeleteAccountChat(message):
 async def delete_account(message):
     async with async_session() as session:
         account_dal = AccountDAL(session)
+        chm_dal = ChatMemberDAL(session)
 
         await message_context_manager.delete_msgId_from_help_menu_dict(
             chat_id=message.chat.id
         )
 
         if message.text == "ДА, ТОЧНО":
+            account_id = await account_dal.getAccountIdBySessionName(session_name=account_context.account_name[message.chat.id])
+            await chm_dal.removeAllChatMembers(account_id)
             await account_dal.deleteAccount(
                 session_name=account_context.account_name[message.chat.id]
             )
-
             if os.path.exists(
                 f"{sessions_dirPath}/{account_context.account_name[message.chat.id]}.session"
             ):

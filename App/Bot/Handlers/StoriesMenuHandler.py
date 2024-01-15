@@ -8,7 +8,6 @@ from App.Database.DAL.AccountDAL import AccountDAL
 from App.Database.session import async_session
 
 async def _stories(message, account_name):
-
     msg = await bot.send_message(message.chat.id, 
         MarkupBuilder.serviceMenuText,
         reply_markup=MarkupBuilder.StoriesMenu(account_name=account_name),

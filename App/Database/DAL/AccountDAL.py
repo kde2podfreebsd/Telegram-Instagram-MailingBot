@@ -149,6 +149,22 @@ class AccountDAL:
             logger.log_error("Account doesnt exists in database")
             return False
 
+    async def getAccountIdBySessionName(self, session_name):
+        result = await self.db_session.execute(
+            select(Account.id).filter(
+                Account.session_file_path == session_name
+            )
+        )
+        return result.scalar()
+
+    async def getAccountAdChannelsById(self, account_id):
+        result = await self.db_session.execute(
+            select(Account.advertising_channels).filter(
+                Account.id == account_id
+            )
+        )
+        return result.scalar()
+
     async def getAccountBySessionName(self, session_name):
         result = await self.db_session.execute(
             select(Account).filter(
