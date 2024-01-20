@@ -51,16 +51,206 @@ class MarkupBuilder(object):
 
             mp.add(
                 types.InlineKeyboardButton(
-                    text="🔙Назад", callback_data="back_to_main_menu"
+                    text="🔙Назад", callback_data="back_to_spam_tg"
                 )
             )
 
             return mp
 
+    @classmethod 
+    def AccountListServices(cls):
+        return types.InlineKeyboardMarkup(
+            row_width=2,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        "📝Спам рассылка телеграма",
+                        callback_data="spam_tg"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "📷Спам рассылка инстаграма",
+                        callback_data="spam_inst"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "🔙Назад",
+                        callback_data="back_to_main_menu"
+                    )
+                ]
+            ]
+        )
+    
+    @classmethod
+    async def AccountListKeyboardVisCfg(cls):
+        async with async_session() as session:
+            account_dal = AccountDAL(session)
+            acc_out = await account_dal.getAllAccounts()
+            ACCOUNTS = [
+                {
+                    "session_name": os.path.splitext(
+                        os.path.basename(x.session_file_path)
+                    )[0]
+                }
+                for x in acc_out
+            ]
+
+            mp = types.InlineKeyboardMarkup(row_width=2)
+
+            for account in ACCOUNTS:
+                mp.add(
+                    types.InlineKeyboardButton(
+                        text=account["session_name"],
+                        callback_data=f"viscfg_account#{account['session_name']}",
+                    )
+                )
+
+            mp.add(
+                types.InlineKeyboardButton(
+                    text="🔙Назад", callback_data="back_to_spam_tg"
+                )
+            )
+
+            return mp
+    
+    @classmethod
+    async def AccountListKeyboardStroies(cls):
+        async with async_session() as session:
+            account_dal = AccountDAL(session)
+            acc_out = await account_dal.getAllAccounts()
+            ACCOUNTS = [
+                {
+                    "session_name": os.path.splitext(
+                        os.path.basename(x.session_file_path)
+                    )[0]
+                }
+                for x in acc_out
+            ]
+
+            mp = types.InlineKeyboardMarkup(row_width=2)
+
+            for account in ACCOUNTS:
+                mp.add(
+                    types.InlineKeyboardButton(
+                        text=account["session_name"],
+                        callback_data=f"acc_stories#{account['session_name']}",
+                    )
+                )
+
+            mp.add(
+                types.InlineKeyboardButton(
+                    text="🔙Назад", callback_data="back_to_spam_tg"
+                )
+            )
+
+            return mp
+
+    @classmethod 
+    def SpamTgActionsList(cls):
+        return types.InlineKeyboardMarkup(
+            row_width=2,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        "Редактировать визуальный конфиг аккаунта",
+                        callback_data="vis_cfg"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "Настроить спам рассылку",
+                        callback_data="acc_edit"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "Просмотр сториз",
+                        callback_data="look_stories"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "🔙Назад",
+                        callback_data="back_to_service_menu"
+                    )
+                ]
+            ]
+        )
+
+    @classmethod
+    def EditVisualOptions(cls, account_name):
+        return types.InlineKeyboardMarkup(row_width=2,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        "Сменить фото профиля", 
+                        callback_data=f"chng_pfp#{account_name}"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "Поменять first_name", 
+                        callback_data=f"chng_first_name#{account_name}"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "Поменять last_name", 
+                        callback_data=f"chng_last_name#{account_name}"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "Поменять username", 
+                        callback_data=f"chng_username#{account_name}"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "🔙Назад",
+                        callback_data="back_to_vis_cfg"
+                    )
+                ]
+            ]
+        )
+    
+    @classmethod
+    def StoriesMenu(cls, account_name):
+        return types.InlineKeyboardMarkup(row_width=2,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        "Запуск просмотра сториз", 
+                        callback_data=f"stories_service#{account_name}"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "Обновление базы данных премиум пользователей", 
+                        callback_data=f"db_update#{account_name}"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "Сброс базы данных", 
+                        callback_data=f"drop_db#{account_name}"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "🔙Назад",
+                        callback_data=f"back_to_look_stories"
+                    )
+                ]
+            ]
+        )
+
     @classmethod
     def AccountEditActions(cls, account_name):
         return types.InlineKeyboardMarkup(
-            row_width=2,
+            row_width=3,
             keyboard=[
                 [
                     types.InlineKeyboardButton(
@@ -112,7 +302,8 @@ class MarkupBuilder(object):
                 ],
                 [
                     types.InlineKeyboardButton(
-                        text="🔙Назад", callback_data=f"back_to_editAccounts_menu"
+                        text="🔙Назад", 
+                        callback_data="back_to_acc_edit"
                     )
                 ],
             ],
@@ -194,7 +385,7 @@ class MarkupBuilder(object):
             one_time_keyboard=True,
         ).add(
             types.KeyboardButton("🤖 Добавить аккаунт"),
-            types.KeyboardButton("🛠 Редактировать аккаунты")
+            types.KeyboardButton("🛠 Выбрать сервис")
         )
         return menu
 
@@ -215,6 +406,12 @@ class MarkupBuilder(object):
     def new_account_state1(cls):
         cls._new_account_state1 = "📩Отправь файл сессии акаунта с уникальным именем в формате: <b>account_name.session</b>"
         return cls._new_account_state1
+
+    @classmethod
+    @property
+    def serviceMenuText(cls):
+        cls.serviceMenuText = "Выбирите нужный сервис"
+        return cls.serviceMenuText
 
     @classmethod
     @property
@@ -372,3 +569,73 @@ class MarkupBuilder(object):
                 ]
             ],
         )
+
+    @classmethod
+    def back_to_vis_cfg_menu(cls, account_name):
+        return types.InlineKeyboardMarkup(
+            row_width=1,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        text="🔙Назад", callback_data=f"back_to_viscfg_account#{account_name}"
+                    )
+                ]
+            ],
+        )
+
+    @classmethod
+    def back_to_stories_menu(cls, account_name):
+        return types.InlineKeyboardMarkup(
+            row_width=1,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        text="🔙Назад", callback_data=f"back_to_stories#{account_name}"
+                    )
+                ]
+            ],
+        )
+    
+    @classmethod
+    @property
+    def storiesServiceText(cls):
+        cls.storiesServiceText = "Проставление реакций сториз было произведено успешно."
+        return cls.storiesServiceText
+
+    @classmethod
+    @property
+    def updateDbText(cls):
+        cls.updateDbText = "База данных пользователей с премиум аккаунтами была обновлена."
+        return cls.updateDbText
+    
+    @classmethod
+    @property
+    def deleteDbText(cls):
+        cls.deleteDbText = "База данных пользователей с премиум аккаунтами была удалена."
+        return cls.deleteDbText
+
+    @classmethod
+    @property
+    def editFirstNameText(cls):
+        cls.editFirstNameText = "<b>Введите текст, на который ты хочешь поменять first_name этого аккаунта сессии:</b>"
+        return cls.editFirstNameText
+
+    @classmethod
+    @property
+    def editLastNameText(cls):
+        cls.editLastNameText = "<b>Введите текст, на который ты хочешь поменять last_name этого аккаунта сессии:</b>"
+        return cls.editLastNameText
+    
+    @classmethod
+    @property
+    def editUsernameText(cls):
+        cls.editUsernameText = "<b>Введите текст, на который ты хочешь поменять username этого аккаунта сессии:</b>"
+        return cls.editUsernameText
+    
+    @classmethod
+    @property
+    def changeProfilePictureText(cls):
+        cls.changeProfilePictureText = "<b>Загрузи фотографию в формате .jpg, .jpeg, на которую хочешь изменить фотографию аккаунта:</b>"
+        return cls.changeProfilePictureText
+
+

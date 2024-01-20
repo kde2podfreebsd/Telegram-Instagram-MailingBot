@@ -7,7 +7,7 @@ from App.Config import singleton
 from App.Database.DAL.AccountDAL import AccountDAL
 from App.Database.session import async_session
 from App.UserAgent.Core.UserAgentCore import UserAgentCore
-# import aioschedule
+import aioschedule
 
 
 @singleton
@@ -28,6 +28,9 @@ class MessageTracker:
             del self.message_ids[session_name][chat]
 
 
+async def sleep():
+    asyncio.sleep(10)
+
 async def mainLayer():
     async with async_session() as session:
         account_dal = AccountDAL(session)
@@ -45,11 +48,11 @@ async def mainLayer():
                 account = await account_dal.getAccountBySessionName(client.session_name)
                 if account and account.advertising_channels:
                     for chats in account.advertising_channels:
-                        # Получение последнего ID сообщения и очистка его
-                        last_message_id = message_tracker.get_last_message_id(client.session_name, chats)
-                        if last_message_id:
-                            await client.deleteMsg(chat=chats, message_id=last_message_id)
-                            message_tracker.clear_last_message_id(client.session_name, chats)
+                        # # Получение последнего ID сообщения и очистка его
+                        # last_message_id = message_tracker.get_last_message_id(client.session_name, chats)
+                        # if last_message_id:
+                        #     await client.deleteMsg(chat=chats, message_id=last_message_id)
+                        #     message_tracker.clear_last_message_id(client.session_name, chats)
 
                         msg = await client.sendMsg(chat=chats, message=account.message)
 
@@ -59,9 +62,7 @@ async def mainLayer():
 
                         delay = random.randint(5, 10)
                         print(f"delay: {delay} for account: {client.session_name}")
-                        # await asyncio.sleep(delay)
-
-                        # tasks.append(task)
+                        aioschedule.every(1).to(delay).seconds.do(sleep)
             await asyncio.sleep(10)
 
 
