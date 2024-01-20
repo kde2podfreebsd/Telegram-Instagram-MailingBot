@@ -634,8 +634,43 @@ class MarkupBuilder(object):
     
     @classmethod
     @property
+    def profilePictureChangedText(cls):
+        cls.profilePictureChangedText = "<b>✅ Аватарка профиля был успешно изменена</b>"
+        return cls.profilePictureChangedText
+
+    @classmethod
+    @property
+    def usernameChangedText(cls):
+        cls.usernameChangedText = "<b>✅ Username был успешно изменен</b>"
+        return cls.usernameChangedText
+
+    @classmethod
+    @property
+    def errorUsernameTaken(cls):
+        cls.errorEditUsername = "<b>❌ Username, который вы ввели, уже занят другим пользователем. Введите его еще раз или вернитесь в меню редактирования визуального конфига</b>"
+        return cls.errorEditUsername
+    
+    @classmethod
+    def errorUsernameFloodWait(cls, time_left):
+        cls.errorUsernameFloodWait = f"<b>❌ Вы изменяли свой username слишком часто за последнее время. До следующего изменения username осталось {time_left} секунд</b>"
+        return cls.errorUsernameFloodWait
+
+    @classmethod
+    @property
+    def errorSameUsername(cls):
+        cls.errorEditUsername = "<b>❌ Username, который вы ввели, не отличается от текущего. Введите его еще раз или вернитесь в меню редактирования визуального конфига</b>"
+        return cls.errorEditUsername
+    
+    @classmethod
+    @property
     def changeProfilePictureText(cls):
-        cls.changeProfilePictureText = "<b>Загрузи фотографию в формате .jpg, .jpeg, на которую хочешь изменить фотографию аккаунта:</b>"
+        cls.changeProfilePictureText = "<b>Загрузи фотографию в формате .jpg, .jpeg или .png, на которую хочешь изменить фотографию аккаунта:</b>"
+        return cls.changeProfilePictureText
+    
+    @classmethod
+    @property
+    def errorProfilePicture(cls):
+        cls.changeProfilePictureText = "<b>❌ Неверное расширение файла для аватарки профиля. Загрузите файл еще раз или вернитесь в меню редактирования визуального конфига</b>"
         return cls.changeProfilePictureText
 
 
