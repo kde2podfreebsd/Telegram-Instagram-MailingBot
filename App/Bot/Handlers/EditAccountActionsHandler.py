@@ -431,7 +431,10 @@ async def delete_account(message):
         )
 
         if message.text == "ДА, ТОЧНО":
-            account_id = await account_dal.getAccountIdBySessionName(session_name=account_context.account_name[message.chat.id])
+            session_name = account_context.account_name[message.chat.id]
+            session_path = f"{sessions_dirPath}/{session_name}.session"
+            account_id = await account_dal.getAccountIdBySessionName(session_name=session_path)
+            print(account_id)
             await chm_dal.removeAllChatMembers(account_id)
             await account_dal.deleteAccount(
                 session_name=account_context.account_name[message.chat.id]
