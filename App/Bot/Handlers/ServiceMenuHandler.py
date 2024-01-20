@@ -7,10 +7,11 @@ from App.Config import sessions_dirPath
 from App.Database.DAL.AccountDAL import AccountDAL
 from App.Database.session import async_session
 
+@bot.message_handler(commands=["help", "start"])
 async def _serviceMenu(message):
 
     msg = await bot.send_message(message.chat.id, 
-        MarkupBuilder.serviceMenuText,
+        MarkupBuilder.welcome_text,
         reply_markup=MarkupBuilder.AccountListServices(),
         parse_mode="MarkdownV2"
     )

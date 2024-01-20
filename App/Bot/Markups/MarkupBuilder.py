@@ -73,12 +73,6 @@ class MarkupBuilder(object):
                         "📷Спам рассылка инстаграма",
                         callback_data="spam_inst"
                     )
-                ],
-                [
-                    types.InlineKeyboardButton(
-                        "🔙Назад",
-                        callback_data="back_to_main_menu"
-                    )
                 ]
             ]
         )
@@ -154,19 +148,25 @@ class MarkupBuilder(object):
             keyboard=[
                 [
                     types.InlineKeyboardButton(
-                        "Редактировать визуальный конфиг аккаунта",
+                        "🤖Добавить аккаунт",
+                        callback_data="new_account_menu"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "🎨Визуальный конфиг аккаунта",
                         callback_data="vis_cfg"
                     )
                 ],
                 [
                     types.InlineKeyboardButton(
-                        "Настроить спам рассылку",
+                        "💬Настроить спам рассылку",
                         callback_data="acc_edit"
                     )
                 ],
                 [
                     types.InlineKeyboardButton(
-                        "Просмотр сториз",
+                        "🔎Просмотр сториз",
                         callback_data="look_stories"
                     )
                 ],
@@ -243,8 +243,8 @@ class MarkupBuilder(object):
                         "🔙Назад",
                         callback_data=f"back_to_look_stories"
                     )
-                ]
-            ]
+                ],
+            ],
         )
 
     @classmethod
@@ -378,18 +378,6 @@ class MarkupBuilder(object):
         return cls._hide_menu
 
     @classmethod
-    def main_menu(cls):
-        menu: ReplyKeyboardMarkup = types.ReplyKeyboardMarkup(
-            row_width=1,
-            resize_keyboard=True,
-            one_time_keyboard=True,
-        ).add(
-            types.KeyboardButton("🤖 Добавить аккаунт"),
-            types.KeyboardButton("🛠 Выбрать сервис")
-        )
-        return menu
-
-    @classmethod
     @property
     def welcome_text(cls):
         cls._welcome_text: object = formatting.format_text(
@@ -409,9 +397,21 @@ class MarkupBuilder(object):
 
     @classmethod
     @property
-    def serviceMenuText(cls):
-        cls.serviceMenuText = "Выбирите нужный сервис"
-        return cls.serviceMenuText
+    def spamTgText(cls):
+        cls.spamTgText = "🔧Настройка аккаунта сессии телеграм"
+        return cls.spamTgText
+    
+    @classmethod
+    @property
+    def visualConfigText(cls):
+        cls.visualConfigText = "🌄Визаульная конфигурация аккаунта сессии"
+        return cls.visualConfigText
+
+    @classmethod
+    @property
+    def storiesMenuText(cls):
+        cls.storiesMenuText = "👀Настройка просмотра сториз"
+        return cls.storiesMenuText
 
     @classmethod
     @property
@@ -545,13 +545,13 @@ class MarkupBuilder(object):
         )
 
     @classmethod
-    def back_to_menu(cls):
+    def back_to_spam_tg(cls):
         return types.InlineKeyboardMarkup(
             row_width=1,
             keyboard=[
                 [
                     types.InlineKeyboardButton(
-                        text="🔙Назад", callback_data="back_to_main_menu"
+                        text="🔙Назад", callback_data="back_to_spam_tg"
                     )
                 ]
             ],

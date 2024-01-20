@@ -10,7 +10,7 @@ from App.Database.session import async_session
 async def _spamTg(message):
 
     msg = await bot.send_message(message.chat.id, 
-        MarkupBuilder.serviceMenuText,
+        text=MarkupBuilder.spamTgText,
         reply_markup=MarkupBuilder.SpamTgActionsList(),
         parse_mode="MarkdownV2"
     )

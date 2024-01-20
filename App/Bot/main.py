@@ -36,7 +36,6 @@ from App.Bot.Handlers.StoriesActionsHandler import _startStories
 
 from App.Bot.Handlers.EditAccountsMenuHandler import _editAccountsMenu
 from App.Bot.Handlers.EditAccountsMenuHandler import _showAccountActions
-from App.Bot.Handlers.MainMenuHandler import _mainMenu
 from App.Bot.Handlers.NewAccountHandler import _newAccountMenu
 from App.Bot.Markups import MarkupBuilder  # noqa
 from App.Bot.Middlewares import FloodingMiddleware
@@ -59,43 +58,44 @@ class Bot:
         bot.add_custom_filter(IsDigitFilter())
         bot.setup_middleware(FloodingMiddleware(1))
 
-    @staticmethod
-    @bot.message_handler(content_types=["text"])
-    async def HandlerTextMiddleware(message):
-        if message.text == "🔙Назад":
-            await message_context_manager.delete_msgId_from_help_menu_dict(
-                chat_id=message.chat.id
-            )
-            await _mainMenu(message=message)
+    # @staticmethod
+    # @bot.message_handler(content_types=["text"])
+    # async def HandlerTextMiddleware(message):
+    #     if message.text == "🔙Назад":
+    #         await message_context_manager.delete_msgId_from_help_menu_dict(
+    #             chat_id=message.chat.id
+    #         )
+    #         await _mainMenu(message=message)
 
-        if message.text == "🤖 Добавить аккаунт":
-            await message_context_manager.delete_msgId_from_help_menu_dict(
-                chat_id=message.chat.id
-            )
-            await _newAccountMenu(message)
+    #     if message.text == "🤖 Добавить аккаунт":
+    #         await message_context_manager.delete_msgId_from_help_menu_dict(
+    #             chat_id=message.chat.id
+    #         )
+    #         await _newAccountMenu(message)
 
-        if message.text == "🛠 Выбрать сервис":
-            await message_context_manager.delete_msgId_from_help_menu_dict(
-                chat_id=message.chat.id
-            )
+    #     if message.text == "🛠 Выбрать сервис":
+    #         await message_context_manager.delete_msgId_from_help_menu_dict(
+    #             chat_id=message.chat.id
+    #         )
 
-            await _serviceMenu(message)
+    #         await _serviceMenu(message)
 
     @staticmethod
     @bot.callback_query_handler(func=lambda call: True)
     async def HandlerInlineMiddleware(call):
         # ------------------menu----------------------
-        if call.data == "back_to_main_menu":
-            await message_context_manager.delete_msgId_from_help_menu_dict(
-                chat_id=call.message.chat.id
-            )
-            await _mainMenu(message=call.message)
 
         if call.data == "back_to_service_menu":
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=call.message.chat.id
             )
             await _serviceMenu(message=call.message)
+
+        if call.data == "new_account_menu":
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            await _newAccountMenu(call.message)
 
         if call.data == "spam_tg" or call.data == "back_to_spam_tg":
             await message_context_manager.delete_msgId_from_help_menu_dict(
@@ -108,6 +108,17 @@ class Bot:
                 chat_id=call.message.chat.id
             )
             await _editAccountsMenu(message=call.message)
+        
+        if "edit_account" in call.data or "back_to_edit_menu" in call.data:
+            await bot.delete_state(
+                user_id=call.message.chat.id, chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            await _showAccountActions(message=call.message, account_name=account_name)
 
         if call.data == "vis_cfg" or "back_to_vis_cfg" == call.data:
             await message_context_manager.delete_msgId_from_help_menu_dict(
@@ -122,17 +133,6 @@ class Bot:
             account_name = call.data.split("#")[-1]
             
             await _visualConfig(account_name=account_name, message=call.message)
-
-        if "edit_account" in call.data or "back_to_edit_menu" in call.data:
-            await bot.delete_state(
-                user_id=call.message.chat.id, chat_id=call.message.chat.id
-            )
-            account_name = call.data.split("#")[-1]
-            
-            await message_context_manager.delete_msgId_from_help_menu_dict(
-                chat_id=call.message.chat.id
-            )
-            await _showAccountActions(message=call.message, account_name=account_name)
 
         # ------------------stories------------------
         

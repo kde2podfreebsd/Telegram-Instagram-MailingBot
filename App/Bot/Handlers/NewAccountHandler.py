@@ -26,7 +26,7 @@ async def _newAccountMenu(message):
     msg = await bot.send_message(
         message.chat.id,
         MarkupBuilder.new_account_state1,
-        reply_markup=MarkupBuilder.back_to_menu(),
+        reply_markup=MarkupBuilder.back_to_spam_tg(),
         parse_mode="HTML",
     )
 
@@ -55,7 +55,7 @@ async def new_document(message: telebot.types.Message):
             chat_id=message.chat.id,
             message_id=result_message.id,
             text="❌<i>Вы отправили файл с неверным расширением. Расширение файла должно оканчиваться на .session</i>",
-            reply_markup=MarkupBuilder.back_to_menu(),
+            reply_markup=MarkupBuilder.back_to_spam_tg(),
             parse_mode="HTML",
         )
         await message_context_manager.add_msgId_to_help_menu_dict(
@@ -71,7 +71,7 @@ async def new_document(message: telebot.types.Message):
             chat_id=message.chat.id,
             message_id=result_message.id,
             text="❌<i>Сессия с таким названием уже существует. Попробуйте отправить другой файл сессии</i>",
-            reply_markup=MarkupBuilder.back_to_menu(),
+            reply_markup=MarkupBuilder.back_to_spam_tg(),
             parse_mode="HTML",
         )
 
@@ -96,7 +96,7 @@ async def new_document(message: telebot.types.Message):
             chat_id=message.chat.id,
             message_id=result_message.id,
             text=f"❌<i>Что-то пошло не так при добавлении сессии аккаунта в базу данных</i>\nError: {e}",
-            reply_markup=MarkupBuilder.back_to_menu(),
+            reply_markup=MarkupBuilder.back_to_spam_tg(),
             parse_mode="HTML",
         )
 
@@ -109,7 +109,7 @@ async def new_document(message: telebot.types.Message):
         chat_id=message.chat.id,
         message_id=result_message.id,
         text="✅<b><i>Сессия сохранена успешно и добавлена в базу данных!</i></b>",
-        reply_markup=MarkupBuilder.back_to_menu(),
+        reply_markup=MarkupBuilder.back_to_spam_tg(),
         parse_mode="HTML",
     )
 

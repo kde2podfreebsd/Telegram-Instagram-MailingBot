@@ -6,7 +6,7 @@ from App.Config import sessions_dirPath
 
 async def _visualConfig(account_name, message):
     msg = await bot.send_message(message.chat.id, 
-        MarkupBuilder.serviceMenuText,
+        MarkupBuilder.visualConfigText,
         reply_markup=MarkupBuilder.EditVisualOptions(account_name=account_name),
         parse_mode="MarkdownV2"
     )
