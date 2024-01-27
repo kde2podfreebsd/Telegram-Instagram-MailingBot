@@ -4,7 +4,7 @@ from App.Bot.Markups import MarkupBuilder
 from App.Config import bot
 from App.Config import message_context_manager
 from App.Config import sessions_dirPath
-from App.Database.DAL.AccountDAL import AccountDAL
+from App.Database.DAL.AccountTgDAL import AccountDAL
 from App.Database.session import async_session
 
 @bot.message_handler(commands=["help", "start"])

@@ -131,8 +131,8 @@ if __name__ == "__main__":
 
 #----------unnecessary-------------
     # u = UserAgentCore("rhdv")
-    # u1 = UserAgentCore("complicat9d")
-    # asyncio.run(u1.sendMsg(chat="@complicat9d", message="test1", parseMode=pyrogram.enums.ParseMode.MARKDOWN))
+    # u1 = UserAgentCore("")
+    # asyncio.run(u1.sendMsg(chat="@", message="test1", parseMode=pyrogram.enums.ParseMode.MARKDOWN))
     # asyncio.run(
     #     u1.sendMsg(chat="@bubblesortdudoser", message="test1", parseMode=pyrogram.enums.ParseMode.MARKDOWN))
     

@@ -4,12 +4,16 @@ from selenium.webdriver.support import expected_conditions as EC
 from seleniumwire import undetected_chromedriver as uc
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
-from Xpath import *
 
-from Parser import Parser
-from ProxyExtension import ProxyExtension
+from App.Config import inst_sessions_dirPath
+
+from App.Parser.Xpath import *
+
+from App.Parser.Parser import Parser
+from App.Parser.ProxyExtension import ProxyExtension
 import ssl
 
+import asyncio
 import pickle 
 import time
 import os
@@ -44,10 +48,12 @@ class InstagramParser(Parser):
             wait.until(EC.presence_of_element_located((By.XPATH, PASSWORD_INPUT_XPATH))).send_keys(self.password)
             wait.until(EC.element_to_be_clickable((By.XPATH, LOGIN_BUTTON_XPATH))).click()
 
-            time.sleep(25)
+            time.sleep(15)
             self.dump_cookies()
         except Exception as e:
             return e
+        finally:
+            self.close_parser()
 
         
     def parse_followers(self, channel: str):
@@ -77,6 +83,8 @@ class InstagramParser(Parser):
             time.sleep(60)
         except Exception as e:
             return e
+        finally:
+            self.close_parser()
     
     def scroll_followers_dialogue(self, wait, dialogue, step=12):
         followers_count = int(wait.until(EC.presence_of_element_located((By.XPATH, FOLLOWER_COUNT_XPATH))).text.replace(',', ''))
@@ -90,24 +98,33 @@ class InstagramParser(Parser):
     def dump_cookies(self):
         try:
             cookies = self.driver.get_cookies()
-            pickle.dump(cookies, open(f"App/Parser/sessions/{self.login}_cookies", "wb"))
+            pickle.dump(cookies, open(f"{inst_sessions_dirPath}/{self.login}.cookies", "wb"))
         except Exception as e:
             return e 
         
     def load_cookies(self):
         try:
-            cookies = pickle.load(open(f"App/Parser/sessions/{self.login}_cookies", "rb"))
+            cookies = pickle.load(open(f"{inst_sessions_dirPath}/{self.login}.cookies", "rb"))
             for cookie in cookies:
                 self.driver.add_cookie(cookie)
         except Exception as e:
             return e
+    
 
-i = InstagramParser(
-    login = 
-    password =  
-)
-# print(i.logging_in())
+# selenium.common.exceptions.ElementClickInterceptedException
 
-print(i.parse_followers(
-    channel="don_tsolakini"
-))
+# login = "79278197750",
+# password = "6/q&(W/BtE.&6ax"   
+# login = "ivanov.stuff@mail.ru",
+# password = "sneezing_and_farting_hedgehog27"
+
+
+# i = InstagramParser(
+#     login = "79278197750",
+#     password = "6/q&(W/BtE.&6ax"    
+# )
+# # print(i.logging_in())
+
+# print(i.parse_followers(
+#     channel="don_tsolakini"
+# ))

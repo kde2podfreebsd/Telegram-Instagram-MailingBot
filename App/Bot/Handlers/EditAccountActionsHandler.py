@@ -12,7 +12,7 @@ from App.Config import account_context
 from App.Config import bot
 from App.Config import message_context_manager
 from App.Config import sessions_dirPath
-from App.Database.DAL.AccountDAL import AccountDAL
+from App.Database.DAL.AccountTgDAL import AccountDAL
 from App.Database.DAL.ChatMemberDAL import ChatMemberDAL
 from App.Database.session import async_session
 

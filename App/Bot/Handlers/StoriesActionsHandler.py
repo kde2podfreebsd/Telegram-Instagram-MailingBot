@@ -7,7 +7,7 @@ from App.Config import account_context
 
 from App.Logger import ApplicationLogger
 
-from App.Database.DAL.AccountDAL import AccountDAL
+from App.Database.DAL.AccountTgDAL import AccountDAL
 from App.Database.DAL.ChatMemberDAL import ChatMemberDAL
 from App.Database.session import async_session
 

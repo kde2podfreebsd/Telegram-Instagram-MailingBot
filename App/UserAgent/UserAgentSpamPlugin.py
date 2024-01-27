@@ -4,7 +4,7 @@ import random
 import uvloop
 
 from App.Config import singleton
-from App.Database.DAL.AccountDAL import AccountDAL
+from App.Database.DAL.AccountTgDAL import AccountDAL
 from App.Database.session import async_session
 from App.UserAgent.Core.UserAgentCore import UserAgentCore
 import aioschedule

@@ -3,9 +3,9 @@ import os
 
 from telebot import formatting
 from telebot import types
-from telebot.types import ReplyKeyboardMarkup
 
-from App.Database.DAL.AccountDAL import AccountDAL
+from App.Database.DAL.AccountTgDAL import AccountDAL
+from App.Database.DAL.AccountInstDAL import AccountInstDAL
 from App.Database.session import async_session
 
 
@@ -370,6 +370,89 @@ class MarkupBuilder(object):
                 return result
 
             return split_string(out_message)
+    @classmethod
+    def SpamInstActionsList(cls):
+        return types.InlineKeyboardMarkup(
+            row_width=2,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        "🤖Добавить аккаунт",
+                        callback_data="new_inst_account_menu"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "💬Настроить спам рассылку",
+                        callback_data="inst_acc_edit"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "🔙Назад",
+                        callback_data="back_to_service_menu"
+                    )
+                ]
+            ]
+        )
+    
+    @classmethod
+    def AccountInstLoggingInMenu(cls):
+        return types.InlineKeyboardMarkup(
+            row_width=2,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        "Логин в аккаунт инстаграма",
+                        callback_data="logging_in_inst"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "Добавление cookie файла сессии аккаунта",
+                        callback_data="logging_in_inst_by_cookies"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "🔙Назад",
+                        callback_data="back_to_spam_inst"
+                    )
+                ]
+            ]
+        )
+
+    @classmethod
+    async def AccountInstListKeyboard(cls):
+        async with async_session() as session:
+            account_inst_dal = AccountInstDAL(session)
+            acc_out = await account_inst_dal.getAllAccounts()
+            ACCOUNTS = [
+                {
+                    "session_name": os.path.splitext(
+                        os.path.basename(x.session_file_path)
+                    )[0]
+                }
+                for x in acc_out
+            ]
+
+            mp = types.InlineKeyboardMarkup(row_width=2)
+
+            for account in ACCOUNTS:
+                mp.add(
+                    types.InlineKeyboardButton(
+                        text=account["session_name"],
+                        callback_data=f"edit_account#{account['session_name']}",
+                    )
+                )
+
+            mp.add(
+                types.InlineKeyboardButton(
+                    text="🔙Назад", callback_data="back_to_spam_inst"
+                )
+            )
+
+            return mp
 
     @classmethod
     @property
@@ -388,7 +471,31 @@ class MarkupBuilder(object):
             separator="\n",
         )
         return cls._welcome_text
+    
+    @classmethod
+    @property
+    def instLoggingInText(cls):
+        cls.instLoggingInText = "Выберите способ, с помощью которого хотите добавить аккаунт сессии инстаграм"
+        return cls.instLoggingInText
 
+    @classmethod
+    @property
+    def instLoggingInSuccessfullyText(cls):
+        cls.instLoggingInSuccessfullyText = "✅Логин в аккаунт инстаграма произошел успешно"
+        return cls.instLoggingInSuccessfullyText
+    
+    @classmethod
+    @property
+    def errorInstLoggingIn(cls):
+        cls.instLoggingInSuccessfullyText = "❌Произошла ошибка при логине в аккаунт инстаграма, введите логин и пароль еще раз или выйдите в меню логина"
+        return cls.instLoggingInSuccessfullyText
+
+    @classmethod
+    @property
+    def instLoginAndPasswordQueryText(cls):
+        cls.instLoginAndPasswordQueryText = "Введите логин и пароль от аккаунта инстаграма, <b>обязательно разделяя их пробелом</b>"
+        return cls.instLoginAndPasswordQueryText
+    
     @classmethod
     @property
     def new_account_state1(cls):
@@ -400,6 +507,12 @@ class MarkupBuilder(object):
     def spamTgText(cls):
         cls.spamTgText = "🔧Настройка аккаунта сессии телеграм"
         return cls.spamTgText
+
+    @classmethod
+    @property
+    def spamInstText(cls):
+        cls.spamInstText = "🔧Настройка аккаунта сессии инстаргам"
+        return cls.spamInstText
     
     @classmethod
     @property
@@ -552,6 +665,32 @@ class MarkupBuilder(object):
                 [
                     types.InlineKeyboardButton(
                         text="🔙Назад", callback_data="back_to_spam_tg"
+                    )
+                ]
+            ],
+        )
+    
+    @classmethod
+    def back_to_spam_inst(cls):
+        return types.InlineKeyboardMarkup(
+            row_width=1,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        text="🔙Назад", callback_data="back_to_spam_inst"
+                    )
+                ]
+            ],
+        )
+    
+    @classmethod
+    def back_to_new_inst_account_menu(cls):
+        return types.InlineKeyboardMarkup(
+            row_width=1,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        text="🔙Назад", callback_data="back_to_new_inst_account_menu"
                     )
                 ]
             ],
