@@ -113,18 +113,6 @@ class InstagramParser(Parser):
 
 # selenium.common.exceptions.ElementClickInterceptedException
 
-# login = "79278197750",
-# password = "6/q&(W/BtE.&6ax"   
-# login = "ivanov.stuff@mail.ru",
-# password = "sneezing_and_farting_hedgehog27"
-
-
-# i = InstagramParser(
-#     login = "79278197750",
-#     password = "6/q&(W/BtE.&6ax"    
-# )
-# # print(i.logging_in())
-
 # print(i.parse_followers(
 #     channel="don_tsolakini"
 # ))
