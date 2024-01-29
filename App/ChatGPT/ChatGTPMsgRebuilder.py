@@ -4,7 +4,7 @@ import os
 import openai
 from dotenv import load_dotenv
 
-from App.Database.DAL.AccountDAL import AccountDAL
+from App.Database.DAL.AccountTgDAL import AccountDAL
 from App.Database.session import async_session
 
 

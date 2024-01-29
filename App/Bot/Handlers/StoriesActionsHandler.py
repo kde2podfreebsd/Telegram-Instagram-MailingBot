@@ -1,5 +1,3 @@
-import telebot
-
 from App.Bot.Markups import MarkupBuilder
 
 from App.Config import bot
@@ -7,10 +5,11 @@ from App.Config import message_context_manager
 from App.Config import sessions_dirPath
 from App.Config import account_context
 
-from App.Database.DAL.AccountDAL import AccountDAL
+from App.Logger import ApplicationLogger
+
+from App.Database.DAL.AccountTgDAL import AccountDAL
 from App.Database.DAL.ChatMemberDAL import ChatMemberDAL
 from App.Database.session import async_session
-from App.Database.Models import Account
 
 from App.UserAgent.UserAgentDbPlugin import get_members_from_tg
 from App.UserAgent.Core import UserAgentCore
@@ -18,6 +17,7 @@ from App.UserAgent.Core import UserAgentCore
 from telethon.tl import functions
 from telethon import types
 
+logger = ApplicationLogger()
 
 async def _updateDb(message):
     chat_id = message.chat.id
