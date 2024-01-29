@@ -1,24 +1,10 @@
-import telebot
-
 from App.Bot.Markups import MarkupBuilder
 from App.Config import bot
 from App.Config import message_context_manager
-from App.Config import sessions_dirPath
-from App.Database.DAL.AccountTgDAL import AccountDAL
-from App.Database.session import async_session
 
-async def _stories(message, account_name):
-    msg = await bot.send_message(message.chat.id, 
-        MarkupBuilder.storiesMenuText,
-        reply_markup=MarkupBuilder.StoriesMenu(account_name=account_name),
-        parse_mode="MarkdownV2"
-    )
-    
-    await message_context_manager.add_msgId_to_help_menu_dict(
-        chat_id=message.chat.id, msgId=msg.message_id
-    )
 
-async def _accountSessionsListStories(message):
+async def _editAccountsInstMenu(message):
+
     msg_to_del = await bot.send_message(
         message.chat.id,
         "⚙️",
@@ -33,11 +19,10 @@ async def _accountSessionsListStories(message):
     msg = await bot.send_message(
         message.chat.id,
         MarkupBuilder.editAccountsMenuText,
-        reply_markup=await MarkupBuilder.AccountListKeyboardStroies(),
+        reply_markup=await MarkupBuilder.AccountInstListKeyboard(),
         parse_mode="HTML",
     )
 
     await message_context_manager.add_msgId_to_help_menu_dict(
         chat_id=message.chat.id, msgId=msg.message_id
     )
-

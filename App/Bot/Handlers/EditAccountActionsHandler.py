@@ -12,7 +12,7 @@ from App.Config import account_context
 from App.Config import bot
 from App.Config import message_context_manager
 from App.Config import sessions_dirPath
-from App.Database.DAL.AccountDAL import AccountDAL
+from App.Database.DAL.AccountTgDAL import AccountDAL
 from App.Database.DAL.ChatMemberDAL import ChatMemberDAL
 from App.Database.session import async_session
 
@@ -431,7 +431,10 @@ async def delete_account(message):
         )
 
         if message.text == "ДА, ТОЧНО":
-            account_id = await account_dal.getAccountIdBySessionName(session_name=account_context.account_name[message.chat.id])
+            session_name = account_context.account_name[message.chat.id]
+            session_path = f"{sessions_dirPath}/{session_name}.session"
+            account_id = await account_dal.getAccountIdBySessionName(session_name=session_path)
+            print(account_id)
             await chm_dal.removeAllChatMembers(account_id)
             await account_dal.deleteAccount(
                 session_name=account_context.account_name[message.chat.id]

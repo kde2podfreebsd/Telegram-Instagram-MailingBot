@@ -25,8 +25,8 @@ from App.Bot.Handlers.EditAccountVisualActionsHandler import _sendChangeLastName
 from App.Bot.Handlers.EditAccountVisualActionsHandler import _sendChangeUsernameText
 from App.Bot.Handlers.EditAccountVisualActionsHandler import _sendChangeProfilePictureText
 
-
 from App.Bot.Handlers.SpamTgHandler import _spamTg
+from App.Bot.Handlers.SpamInstHandler import _spamInst
 
 from App.Bot.Handlers.StoriesMenuHandler import _stories
 from App.Bot.Handlers.StoriesMenuHandler import _accountSessionsListStories
@@ -35,17 +35,23 @@ from App.Bot.Handlers.StoriesActionsHandler import _deleteDb
 from App.Bot.Handlers.StoriesActionsHandler import _startStories
 
 from App.Bot.Handlers.EditAccountsMenuHandler import _editAccountsMenu
+from App.Bot.Handlers.EditAccountsInstMenuHandler import _editAccountsInstMenu
 from App.Bot.Handlers.EditAccountsMenuHandler import _showAccountActions
-from App.Bot.Handlers.MainMenuHandler import _mainMenu
 from App.Bot.Handlers.NewAccountHandler import _newAccountMenu
+from App.Bot.Handlers.NewAccountInstHandler import _newAccountLoggingIn
+from App.Bot.Handlers.NewAccountInstHandler import _newAccountLoggingInCookies
+from App.Bot.Handlers.NewAccountInstHandler import _newAccountLoggingInManuallyText
+
 from App.Bot.Markups import MarkupBuilder  # noqa
 from App.Bot.Middlewares import FloodingMiddleware
 from App.Config import account_context
 from App.Config import bot
 from App.Config import message_context_manager
 from App.Config import singleton
-from App.Database.DAL.AccountDAL import AccountDAL
+from App.Database.DAL.AccountTgDAL import AccountDAL
 from App.Database.session import async_session
+from App.Database.DAL.AccountInstDAL import AccountInstDAL
+
 
 
 @singleton
@@ -60,42 +66,21 @@ class Bot:
         bot.setup_middleware(FloodingMiddleware(1))
 
     @staticmethod
-    @bot.message_handler(content_types=["text"])
-    async def HandlerTextMiddleware(message):
-        if message.text == "🔙Назад":
-            await message_context_manager.delete_msgId_from_help_menu_dict(
-                chat_id=message.chat.id
-            )
-            await _mainMenu(message=message)
-
-        if message.text == "🤖 Добавить аккаунт":
-            await message_context_manager.delete_msgId_from_help_menu_dict(
-                chat_id=message.chat.id
-            )
-            await _newAccountMenu(message)
-
-        if message.text == "🛠 Выбрать сервис":
-            await message_context_manager.delete_msgId_from_help_menu_dict(
-                chat_id=message.chat.id
-            )
-
-            await _serviceMenu(message)
-
-    @staticmethod
     @bot.callback_query_handler(func=lambda call: True)
     async def HandlerInlineMiddleware(call):
         # ------------------menu----------------------
-        if call.data == "back_to_main_menu":
-            await message_context_manager.delete_msgId_from_help_menu_dict(
-                chat_id=call.message.chat.id
-            )
-            await _mainMenu(message=call.message)
 
         if call.data == "back_to_service_menu":
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=call.message.chat.id
             )
             await _serviceMenu(message=call.message)
+
+        if call.data == "new_account_menu":
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            await _newAccountMenu(call.message)
 
         if call.data == "spam_tg" or call.data == "back_to_spam_tg":
             await message_context_manager.delete_msgId_from_help_menu_dict(
@@ -108,6 +93,17 @@ class Bot:
                 chat_id=call.message.chat.id
             )
             await _editAccountsMenu(message=call.message)
+        
+        if "edit_account" in call.data or "back_to_edit_menu" in call.data:
+            await bot.delete_state(
+                user_id=call.message.chat.id, chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            await _showAccountActions(message=call.message, account_name=account_name)
 
         if call.data == "vis_cfg" or "back_to_vis_cfg" == call.data:
             await message_context_manager.delete_msgId_from_help_menu_dict(
@@ -122,17 +118,6 @@ class Bot:
             account_name = call.data.split("#")[-1]
             
             await _visualConfig(account_name=account_name, message=call.message)
-
-        if "edit_account" in call.data or "back_to_edit_menu" in call.data:
-            await bot.delete_state(
-                user_id=call.message.chat.id, chat_id=call.message.chat.id
-            )
-            account_name = call.data.split("#")[-1]
-            
-            await message_context_manager.delete_msgId_from_help_menu_dict(
-                chat_id=call.message.chat.id
-            )
-            await _showAccountActions(message=call.message, account_name=account_name)
 
         # ------------------stories------------------
         
@@ -320,6 +305,39 @@ class Bot:
 
             await _set_status_off(call.message)
 
+        # ---------------inst menu-----------------
+        
+        if call.data == "spam_inst" or call.data == "back_to_spam_inst":
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            await _spamInst(message=call.message)
+        
+        if call.data == "new_inst_account_menu" or call.data == "back_to_new_inst_account_menu":
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            await _newAccountLoggingIn(message=call.message)
+
+        if call.data == "inst_acc_edit":
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            await _editAccountsInstMenu(message=call.message)
+
+        if call.data == "logging_in_inst":
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            await _newAccountLoggingInManuallyText(message=call.message)
+
+        if call.data == "logging_in_inst_by_cookies":
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            await _newAccountLoggingInCookies(message=call.message)
+
+            
     @staticmethod
     async def polling():
         task1 = asyncio.create_task(bot.infinity_polling())

@@ -1,13 +1,12 @@
 import asyncio
-# from typing import Optional
-
 import uvloop
+import os 
+
 from telethon import TelegramClient
-# import pyrogram
+import telethon.tl.functions
 
 from App.Config import sessions_dirPath
 from App.Logger import ApplicationLogger
-
 
 logger = ApplicationLogger()
 
@@ -36,9 +35,6 @@ class UserAgentCore:
         self,
         chat: str | int,
         message: str,
-        # parseMode: Optional[
-        #     pyrogram.enums.ParseMode
-        # ] = pyrogram.enums.ParseMode.MARKDOWN,
         parseMode='md',
     ):
         async with self.app as app:
@@ -73,22 +69,70 @@ class UserAgentCore:
                 f"Get info about account registered by {self.session_name} session"
             )
             return await app.get_me()
+    
+    @logger.exception_handler
+    async def editFirstName(self, new_first_name):
+        async with self.app as app:
+            await app(telethon.tl.functions.account.UpdateProfileRequest(
+                first_name=new_first_name
+            ))
+            logger.log_info(
+                f"{self.session_name}'s first name has been changed to {new_first_name}"
+            )
+
+    @logger.exception_handler
+    async def editLastName(self, new_last_name):
+        async with self.app as app:
+            await app(telethon.tl.functions.account.UpdateProfileRequest(
+                last_name=new_last_name
+            ))
+            logger.log_info(
+                f"{self.session_name}'s last name has been changed to {new_last_name}"
+            )
+    
+    @logger.exception_handler
+    async def editUsername(self, new_username):
+        async with self.app as app:
+            await app(telethon.tl.functions.account.UpdateUsernameRequest(
+                username=new_username
+            ))
+            logger.log_info(
+                f"{self.session_name}'s last name has been changed to {new_username}"
+            )
+    
+    @logger.exception_handler
+    async def changeProfilePicture(self, file_content):
+        with open("temp_photo.jpg", "wb") as temp_file:
+            temp_file.write(file_content)
+
+        async with self.app as app:
+            file_result = await app.upload_file("temp_photo.jpg")
+            await app(telethon.tl.functions.photos.UploadProfilePhotoRequest(
+                file=file_result
+            ))
+            logger.log_info(
+                f"{self.session_name}'s profile picture has been changed"
+            )
+            os.remove("temp_photo.jpg")
 
 
-# if __name__ == "__main__":
-#     uvloop.install()
-#
-#     asyncio.run(UserAgentCore.createSession(
-#         session_name="session",
-#         api_id=,
-#         api_hash=""
-#     ))
+
+
+
+if __name__ == "__main__":
+    uvloop.install()
+
+    asyncio.run(UserAgentCore.createSession(
+        session_name="abc",
+        api_id=,
+        api_hash=""
+    ))
 
 
 #----------unnecessary-------------
     # u = UserAgentCore("rhdv")
-    # u1 = UserAgentCore("complicat9d")
-    # asyncio.run(u1.sendMsg(chat="@complicat9d", message="test1", parseMode=pyrogram.enums.ParseMode.MARKDOWN))
+    # u1 = UserAgentCore("")
+    # asyncio.run(u1.sendMsg(chat="@", message="test1", parseMode=pyrogram.enums.ParseMode.MARKDOWN))
     # asyncio.run(
     #     u1.sendMsg(chat="@bubblesortdudoser", message="test1", parseMode=pyrogram.enums.ParseMode.MARKDOWN))
     

@@ -3,11 +3,11 @@ from App.Config import bot
 from App.Config import message_context_manager
 
 
-async def _spamTg(message):
+async def _spamInst(message):
 
     msg = await bot.send_message(message.chat.id, 
-        text=MarkupBuilder.spamTgText,
-        reply_markup=MarkupBuilder.SpamTgActionsList(),
+        text=MarkupBuilder.spamInstText,
+        reply_markup=MarkupBuilder.SpamInstActionsList(),
         parse_mode="MarkdownV2"
     )
     

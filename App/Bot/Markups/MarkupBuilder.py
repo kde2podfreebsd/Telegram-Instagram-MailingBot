@@ -3,9 +3,9 @@ import os
 
 from telebot import formatting
 from telebot import types
-from telebot.types import ReplyKeyboardMarkup
 
-from App.Database.DAL.AccountDAL import AccountDAL
+from App.Database.DAL.AccountTgDAL import AccountDAL
+from App.Database.DAL.AccountInstDAL import AccountInstDAL
 from App.Database.session import async_session
 
 
@@ -72,12 +72,6 @@ class MarkupBuilder(object):
                     types.InlineKeyboardButton(
                         "📷Спам рассылка инстаграма",
                         callback_data="spam_inst"
-                    )
-                ],
-                [
-                    types.InlineKeyboardButton(
-                        "🔙Назад",
-                        callback_data="back_to_main_menu"
                     )
                 ]
             ]
@@ -154,19 +148,25 @@ class MarkupBuilder(object):
             keyboard=[
                 [
                     types.InlineKeyboardButton(
-                        "Редактировать визуальный конфиг аккаунта",
+                        "🤖Добавить аккаунт",
+                        callback_data="new_account_menu"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "🎨Визуальный конфиг аккаунта",
                         callback_data="vis_cfg"
                     )
                 ],
                 [
                     types.InlineKeyboardButton(
-                        "Настроить спам рассылку",
+                        "💬Настроить спам рассылку",
                         callback_data="acc_edit"
                     )
                 ],
                 [
                     types.InlineKeyboardButton(
-                        "Просмотр сториз",
+                        "🔎Просмотр сториз",
                         callback_data="look_stories"
                     )
                 ],
@@ -243,8 +243,8 @@ class MarkupBuilder(object):
                         "🔙Назад",
                         callback_data=f"back_to_look_stories"
                     )
-                ]
-            ]
+                ],
+            ],
         )
 
     @classmethod
@@ -370,24 +370,95 @@ class MarkupBuilder(object):
                 return result
 
             return split_string(out_message)
+    @classmethod
+    def SpamInstActionsList(cls):
+        return types.InlineKeyboardMarkup(
+            row_width=2,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        "🤖Добавить аккаунт",
+                        callback_data="new_inst_account_menu"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "💬Настроить спам рассылку",
+                        callback_data="inst_acc_edit"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "🔙Назад",
+                        callback_data="back_to_service_menu"
+                    )
+                ]
+            ]
+        )
+    
+    @classmethod
+    def AccountInstLoggingInMenu(cls):
+        return types.InlineKeyboardMarkup(
+            row_width=2,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        "Логин в аккаунт инстаграма",
+                        callback_data="logging_in_inst"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "Добавление cookie файла сессии аккаунта",
+                        callback_data="logging_in_inst_by_cookies"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "🔙Назад",
+                        callback_data="back_to_spam_inst"
+                    )
+                ]
+            ]
+        )
+
+    @classmethod
+    async def AccountInstListKeyboard(cls):
+        async with async_session() as session:
+            account_inst_dal = AccountInstDAL(session)
+            acc_out = await account_inst_dal.getAllAccounts()
+            ACCOUNTS = [
+                {
+                    "session_name": os.path.splitext(
+                        os.path.basename(x.session_file_path)
+                    )[0]
+                }
+                for x in acc_out
+            ]
+
+            mp = types.InlineKeyboardMarkup(row_width=2)
+
+            for account in ACCOUNTS:
+                mp.add(
+                    types.InlineKeyboardButton(
+                        text=account["session_name"],
+                        callback_data=f"edit_account#{account['session_name']}",
+                    )
+                )
+
+            mp.add(
+                types.InlineKeyboardButton(
+                    text="🔙Назад", callback_data="back_to_spam_inst"
+                )
+            )
+
+            return mp
 
     @classmethod
     @property
     def hide_menu(cls):
         cls._hide_menu: object = types.ReplyKeyboardRemove()
         return cls._hide_menu
-
-    @classmethod
-    def main_menu(cls):
-        menu: ReplyKeyboardMarkup = types.ReplyKeyboardMarkup(
-            row_width=1,
-            resize_keyboard=True,
-            one_time_keyboard=True,
-        ).add(
-            types.KeyboardButton("🤖 Добавить аккаунт"),
-            types.KeyboardButton("🛠 Выбрать сервис")
-        )
-        return menu
 
     @classmethod
     @property
@@ -400,7 +471,31 @@ class MarkupBuilder(object):
             separator="\n",
         )
         return cls._welcome_text
+    
+    @classmethod
+    @property
+    def instLoggingInText(cls):
+        cls.instLoggingInText = "Выберите способ, с помощью которого хотите добавить аккаунт сессии инстаграм"
+        return cls.instLoggingInText
 
+    @classmethod
+    @property
+    def instLoggingInSuccessfullyText(cls):
+        cls.instLoggingInSuccessfullyText = "✅Логин в аккаунт инстаграма произошел успешно"
+        return cls.instLoggingInSuccessfullyText
+    
+    @classmethod
+    @property
+    def errorInstLoggingIn(cls):
+        cls.instLoggingInSuccessfullyText = "❌Произошла ошибка при логине в аккаунт инстаграма, введите логин и пароль еще раз или выйдите в меню логина"
+        return cls.instLoggingInSuccessfullyText
+
+    @classmethod
+    @property
+    def instLoginAndPasswordQueryText(cls):
+        cls.instLoginAndPasswordQueryText = "Введите логин и пароль от аккаунта инстаграма, <b>обязательно разделяя их пробелом</b>"
+        return cls.instLoginAndPasswordQueryText
+    
     @classmethod
     @property
     def new_account_state1(cls):
@@ -409,9 +504,27 @@ class MarkupBuilder(object):
 
     @classmethod
     @property
-    def serviceMenuText(cls):
-        cls.serviceMenuText = "Выбирите нужный сервис"
-        return cls.serviceMenuText
+    def spamTgText(cls):
+        cls.spamTgText = "🔧Настройка аккаунта сессии телеграм"
+        return cls.spamTgText
+
+    @classmethod
+    @property
+    def spamInstText(cls):
+        cls.spamInstText = "🔧Настройка аккаунта сессии инстаргам"
+        return cls.spamInstText
+    
+    @classmethod
+    @property
+    def visualConfigText(cls):
+        cls.visualConfigText = "🌄Визаульная конфигурация аккаунта сессии"
+        return cls.visualConfigText
+
+    @classmethod
+    @property
+    def storiesMenuText(cls):
+        cls.storiesMenuText = "👀Настройка просмотра сториз"
+        return cls.storiesMenuText
 
     @classmethod
     @property
@@ -545,13 +658,39 @@ class MarkupBuilder(object):
         )
 
     @classmethod
-    def back_to_menu(cls):
+    def back_to_spam_tg(cls):
         return types.InlineKeyboardMarkup(
             row_width=1,
             keyboard=[
                 [
                     types.InlineKeyboardButton(
-                        text="🔙Назад", callback_data="back_to_main_menu"
+                        text="🔙Назад", callback_data="back_to_spam_tg"
+                    )
+                ]
+            ],
+        )
+    
+    @classmethod
+    def back_to_spam_inst(cls):
+        return types.InlineKeyboardMarkup(
+            row_width=1,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        text="🔙Назад", callback_data="back_to_spam_inst"
+                    )
+                ]
+            ],
+        )
+    
+    @classmethod
+    def back_to_new_inst_account_menu(cls):
+        return types.InlineKeyboardMarkup(
+            row_width=1,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        text="🔙Назад", callback_data="back_to_new_inst_account_menu"
                     )
                 ]
             ],
@@ -634,8 +773,43 @@ class MarkupBuilder(object):
     
     @classmethod
     @property
+    def profilePictureChangedText(cls):
+        cls.profilePictureChangedText = "<b>✅ Аватарка профиля был успешно изменена</b>"
+        return cls.profilePictureChangedText
+
+    @classmethod
+    @property
+    def usernameChangedText(cls):
+        cls.usernameChangedText = "<b>✅ Username был успешно изменен</b>"
+        return cls.usernameChangedText
+
+    @classmethod
+    @property
+    def errorUsernameTaken(cls):
+        cls.errorEditUsername = "<b>❌ Username, который вы ввели, уже занят другим пользователем. Введите его еще раз или вернитесь в меню редактирования визуального конфига</b>"
+        return cls.errorEditUsername
+    
+    @classmethod
+    def errorUsernameFloodWait(cls, time_left):
+        cls.errorUsernameFloodWait = f"<b>❌ Вы изменяли свой username слишком часто за последнее время. До следующего изменения username осталось {time_left} секунд</b>"
+        return cls.errorUsernameFloodWait
+
+    @classmethod
+    @property
+    def errorSameUsername(cls):
+        cls.errorEditUsername = "<b>❌ Username, который вы ввели, не отличается от текущего. Введите его еще раз или вернитесь в меню редактирования визуального конфига</b>"
+        return cls.errorEditUsername
+    
+    @classmethod
+    @property
     def changeProfilePictureText(cls):
-        cls.changeProfilePictureText = "<b>Загрузи фотографию в формате .jpg, .jpeg, на которую хочешь изменить фотографию аккаунта:</b>"
+        cls.changeProfilePictureText = "<b>Загрузи фотографию в формате .jpg, .jpeg или .png, на которую хочешь изменить фотографию аккаунта:</b>"
+        return cls.changeProfilePictureText
+    
+    @classmethod
+    @property
+    def errorProfilePicture(cls):
+        cls.changeProfilePictureText = "<b>❌ Неверное расширение файла для аватарки профиля. Загрузите файл еще раз или вернитесь в меню редактирования визуального конфига</b>"
         return cls.changeProfilePictureText
 
 

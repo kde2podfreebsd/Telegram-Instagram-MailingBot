@@ -27,14 +27,14 @@ class ChatMemberDAL:
         existing_user = await self.db_session.execute(select(ChatMember).where(
                 and_(
                     ChatMember.username == username,
-                    ChatMember.account_id == account_id
+                    ChatMember.account_tg_id == account_id
                 )
             )
         )
         existing_user = existing_user.scalars().first()
 
         if existing_user:
-            logger.log_error(f"Пользователь {username} уже существует в базе данных.")
+            logger.log_error(f"ChatMember {username} already exist in the data base.")
             return existing_user
 
         new_chat_member = ChatMember(
@@ -50,7 +50,7 @@ class ChatMemberDAL:
             await self.db_session.commit()
             return new_chat_member
         except IntegrityError as e:
-            logger.log_error(f"Ошибка при добавлении пользователя: {e}")
+            logger.log_error(f"An error occured while adding ChatMember: {e}")
             await self.db_session.rollback()
             return None
     
@@ -63,14 +63,14 @@ class ChatMemberDAL:
             select(ChatMember).where(
                 and_(
                     ChatMember.username == username,
-                    ChatMember.account_id == account_id
+                    ChatMember.account_tg_id == account_id
                 )
             )
         )
         existing_user = existing_user.scalars().first()
 
         if not existing_user:
-            logger.log_error(f"Пользователь {username} не найден в базе данных.")
+            logger.log_error(f"ChatMember {username} has not been found in the data base.")
             return None
 
         await self.db_session.delete(existing_user)
@@ -78,7 +78,7 @@ class ChatMemberDAL:
             await self.db_session.commit()
             return existing_user
         except IntegrityError as e:
-            logger.log_error(f"Ошибка при удалении пользователя: {e}")
+            logger.log_error(f"An error occured while removing ChatMember: {e}")
             await self.db_session.rollback()
             return None
 
@@ -90,7 +90,7 @@ class ChatMemberDAL:
     async def getAllChatMembersByAccountId(self, account_id):
         result = await self.db_session.execute(
             select(ChatMember).filter(
-                ChatMember.account_id == account_id
+                ChatMember.account_tg_id == account_id
             )
         )
         table = result.scalars().all()
@@ -101,7 +101,7 @@ class ChatMemberDAL:
 async def main():
     async with async_session() as session:
         cmdal = ChatMemberDAL(session)
-        await cmdal.addChatMemberToAccount(account_id=1, username="coldbaget", is_premium=True, first_name="ivan", last_name="bogomolov")
+        await cmdal.removeAllChatMembers(None)
 
 if __name__ == "__main__":
 

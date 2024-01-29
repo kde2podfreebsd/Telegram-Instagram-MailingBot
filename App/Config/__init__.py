@@ -1,10 +1,11 @@
 import os
 
-from .bot import bot
+from App.Config.bot import bot
+
 
 basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 sessions_dirPath = os.path.join(basedir, "UserAgent", "sessions")
-print(sessions_dirPath)
+inst_sessions_dirPath = os.path.join(basedir, "Parser", "sessions")
 logs_dirPath = f"{basedir}/Logger/logs"
 
 

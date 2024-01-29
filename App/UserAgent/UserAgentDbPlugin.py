@@ -1,4 +1,4 @@
-from App.Database.DAL.AccountDAL import AccountDAL
+from App.Database.DAL.AccountTgDAL import AccountDAL
 from App.Database.session import async_session
 from App.UserAgent.Core.UserAgentCore import UserAgentCore
 import asyncio
@@ -23,7 +23,7 @@ async def get_members_from_tg(session_name, usernames, limit=None):
 
 
 if __name__ == "__main__":
-    db = asyncio.run(get_members_from_tg("1", ["fortnite9", "wildt"]))
+    db = asyncio.run(get_members_from_tg("2", ["MafiaSchool21"]))
     print(db)
 
 
