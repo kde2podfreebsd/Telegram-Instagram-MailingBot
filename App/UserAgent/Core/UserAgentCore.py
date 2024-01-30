@@ -15,6 +15,7 @@ class UserAgentCore:
     def __init__(self, session_name: str):
         self.session_name = session_name
         self.app = TelegramClient(f"{sessions_dirPath}/{session_name}", api_id=123, api_hash="123")
+        
         logger.log_info(
             f"Init UserAgentCore on {session_name} session. Path to session {sessions_dirPath}/{session_name}"
         )
@@ -47,13 +48,15 @@ class UserAgentCore:
     @logger.exception_handler
     async def deleteMsg(self, chat: str | int, message_ids: int):
         async with self.app as app:
-            await app.delete_messages(chat_id=chat, message_ids=message_ids)
+            chat_entity = await self.app.get_entity(chat)
+            await app.delete_messages(entity=chat_entity, message_ids=message_ids)
             logger.log_info(f"Deleted message from: {chat}. Message: {message_ids}")
 
     @logger.exception_handler
     async def joinChat(self, chat: str | int):
         async with self.app as app:
-            await app.join_chat(chat)
+            chat_entity = await self.app.get_entity(chat)
+            await app.join_chat(chat_entity)
             logger.log_info(f"Join in chat: {chat}")
 
     @logger.exception_handler
@@ -131,8 +134,8 @@ if __name__ == "__main__":
 
 #----------unnecessary-------------
     # u = UserAgentCore("rhdv")
-    # u1 = UserAgentCore("")
-    # asyncio.run(u1.sendMsg(chat="@", message="test1", parseMode=pyrogram.enums.ParseMode.MARKDOWN))
+    # u1 = UserAgentCore("complicat9d")
+    # asyncio.run(u1.sendMsg(chat="@complicat9d", message="test1", parseMode=pyrogram.enums.ParseMode.MARKDOWN))
     # asyncio.run(
     #     u1.sendMsg(chat="@bubblesortdudoser", message="test1", parseMode=pyrogram.enums.ParseMode.MARKDOWN))
     
