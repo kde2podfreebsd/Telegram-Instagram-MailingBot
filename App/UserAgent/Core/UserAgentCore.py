@@ -4,8 +4,13 @@ import os
 
 from telethon import TelegramClient
 import telethon.tl.functions
+from telethon.tl.functions.users import GetFullUserRequest
+from telethon.tl.functions.account import UpdateProfileRequest
+from telethon import functions
+from telethon import types
 
 from App.Config import sessions_dirPath
+from App.Config import basedir
 from App.Logger import ApplicationLogger
 
 logger = ApplicationLogger()
@@ -15,6 +20,7 @@ class UserAgentCore:
     def __init__(self, session_name: str):
         self.session_name = session_name
         self.app = TelegramClient(f"{sessions_dirPath}/{session_name}", api_id=123, api_hash="123")
+        
         logger.log_info(
             f"Init UserAgentCore on {session_name} session. Path to session {sessions_dirPath}/{session_name}"
         )
@@ -47,13 +53,15 @@ class UserAgentCore:
     @logger.exception_handler
     async def deleteMsg(self, chat: str | int, message_ids: int):
         async with self.app as app:
-            await app.delete_messages(chat_id=chat, message_ids=message_ids)
+            chat_entity = await self.app.get_entity(chat)
+            await app.delete_messages(entity=chat_entity, message_ids=message_ids)
             logger.log_info(f"Deleted message from: {chat}. Message: {message_ids}")
 
     @logger.exception_handler
     async def joinChat(self, chat: str | int):
         async with self.app as app:
-            await app.join_chat(chat)
+            chat_entity = await self.app.get_entity(chat)
+            await app.join_chat(chat_entity)
             logger.log_info(f"Join in chat: {chat}")
 
     @logger.exception_handler
@@ -97,7 +105,7 @@ class UserAgentCore:
                 username=new_username
             ))
             logger.log_info(
-                f"{self.session_name}'s last name has been changed to {new_username}"
+                f"{self.session_name}'s username has been changed to {new_username}"
             )
     
     @logger.exception_handler
@@ -114,25 +122,95 @@ class UserAgentCore:
                 f"{self.session_name}'s profile picture has been changed"
             )
             os.remove("temp_photo.jpg")
+    
+    @logger.exception_handler
+    async def changeProfileDescription(self, new_account_description):
+        async with self.app as app:
+            print("pfp desc CHANGED: ", new_account_description)
+            await app(
+                UpdateProfileRequest(
+                    about=new_account_description
+                )
+            )
+            logger.log_info(f"{self.session_name}'s profile description has been changed to {new_account_description}")
+    
+    async def getProfilePictures(self, entity):
+        async with self.app as app:
+            photos = await app.get_profile_photos(entity)
+            return photos 
+    
+    async def getProfileBio(self, entity):
+        async with self.app as app:
+            full = await app(GetFullUserRequest(entity))
+            return full.full_user.about 
+    
+    async def getProfilePictureId(self):
+        async with self.app as app:
+            entity = await self.getMe()
+            pfps = await self.getProfilePictures(entity)
+            photo_id = pfps[0].id
+            return photo_id
+        
+    async def downloadProfilePhoto(self):
+        async with self.app as app:
+            file_name = await app.download_profile_photo("me", file='me.jpg')
+            link = f"/Users/user/Spam-Tg-Inst-Service/{file_name}"
+            return link 
+    
+    async def uploadPhoto(self, link):
+        async with self.app as app:
+            file = await app.upload_file(link)
+            return file
 
+    @logger.exception_handler
+    async def giveReaction(self, usernames):
+        async with self.app as app:
+            max_ids = await app(functions.stories.GetPeerMaxIDsRequest(
+                id=usernames
+            ))
+            # print([(i, j) for i, j in zip(max_ids, usernames)])
+            for username, max_id in zip(usernames, max_ids):
+                if (max_id != 0):
+                    # print(username, max_id)
+                    await app(functions.stories.ReadStoriesRequest(
+                        peer=username,
+                        max_id=max_id
+                    ))
+                    await app(functions.stories.SendReactionRequest(
+                        peer=username,
+                        story_id=max_id,
+                        reaction=types.ReactionEmoji(
+                            emoticon='❤️'
+                        ),
+                        add_to_recent=True
+                    ))
+                    logger.log_info(f"Reaction has been given to @{username}")
 
-
+async def main():
+    x = UserAgentCore("test")
+    e = await x.getMe()
+    r1 = await x.getProfileBio(e)
+    r2 = await x.getProfilePictures(e)
+    print(r1, r2)
 
 
 if __name__ == "__main__":
     uvloop.install()
 
-    asyncio.run(UserAgentCore.createSession(
-        session_name="abc",
-        api_id=,
-        api_hash=""
-    ))
+    # asyncio.run(UserAgentCore.createSession(
+    #     session_name="abc",
+    #     api_id=123,
+    #     api_hash=""
+    # ))
+   
+    asyncio.run(main())
+
 
 
 #----------unnecessary-------------
     # u = UserAgentCore("rhdv")
-    # u1 = UserAgentCore("")
-    # asyncio.run(u1.sendMsg(chat="@", message="test1", parseMode=pyrogram.enums.ParseMode.MARKDOWN))
+    # u1 = UserAgentCore("complicat9d")
+    # asyncio.run(u1.sendMsg(chat="@complicat9d", message="test1", parseMode=pyrogram.enums.ParseMode.MARKDOWN))
     # asyncio.run(
     #     u1.sendMsg(chat="@bubblesortdudoser", message="test1", parseMode=pyrogram.enums.ParseMode.MARKDOWN))
     

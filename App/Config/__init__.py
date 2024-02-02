@@ -6,6 +6,7 @@ from App.Config.bot import bot
 basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 sessions_dirPath = os.path.join(basedir, "UserAgent", "sessions")
 inst_sessions_dirPath = os.path.join(basedir, "Parser", "sessions")
+pfp_file_path = "/Users/user/Spam-Tg-Inst-Service/me.jpg"
 logs_dirPath = f"{basedir}/Logger/logs"
 
 
@@ -48,6 +49,14 @@ class AccountContext:
     def updateAccountName(self, chat_id: int, account_name: str):
         self.account_name[chat_id] = account_name
 
+@singleton
+class LoginContext:
+    def __init__(self):
+        self.login = {}
+
+    def updateLogin(self, chat_id: int, login: str):
+        self.login[chat_id] = login
 
 message_context_manager = MessageContextManager()
 account_context = AccountContext()
+login_context = LoginContext()

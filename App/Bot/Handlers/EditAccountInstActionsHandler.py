@@ -7,17 +7,16 @@ from telebot.asyncio_handler_backends import StatesGroup
 from App.Bot.Handlers.EditAccountsMenuHandler import _editAccountsMenu
 from App.Bot.Handlers.EditAccountsMenuHandler import _showAccountActions
 from App.Bot.Markups import MarkupBuilder
-from App.ChatGPT.ChatGTPMsgRebuilder import ChatGPTMessageRebuilder
 from App.Config import account_context
 from App.Config import bot
 from App.Config import message_context_manager
-from App.Config import sessions_dirPath
-from App.Database.DAL.AccountTgDAL import AccountDAL
+from App.Config import inst_sessions_dirPath
+from App.Database.DAL.AccountInstDAL import AccountInstDAL
 from App.Database.session import async_session
 
 
 class EditAccountActionStates(StatesGroup):
-    EditMessage = State()
+    UpdateMessage = State()
     EditPrompt = State()
     AddAdvChat = State()
     RemoveAdvChat = State()
@@ -29,14 +28,14 @@ class EditAccountActionStates(StatesGroup):
 # --------------Change Message--------------
 
 
-async def _sendChangeAccountMessageText(message):
+async def _sendUpdateMessageText(message):
     await message_context_manager.delete_msgId_from_help_menu_dict(
         chat_id=message.chat.id
     )
 
     msg = await bot.send_message(
         message.chat.id,
-        MarkupBuilder.sendChangeAccountMessageText,
+        MarkupBuilder.sendUpdateMessageText,
         reply_markup=MarkupBuilder.back_to_edit_menu(
             account_name=account_context.account_name[message.chat.id]
         ),
@@ -45,19 +44,19 @@ async def _sendChangeAccountMessageText(message):
     await message_context_manager.add_msgId_to_help_menu_dict(
         chat_id=message.chat.id, msgId=msg.message_id
     )
-    await bot.set_state(message.chat.id, EditAccountActionStates.EditMessage)
+    await bot.set_state(message.chat.id, EditAccountActionStates.UpdateMessage)
 
 
-@bot.message_handler(state=EditAccountActionStates.EditMessage)
+@bot.message_handler(state=EditAccountActionStates.UpdateMessage)
 async def edit_message(message):
     async with async_session() as session:
-        account_dal = AccountDAL(session)
+        account_inst_dal = AccountInstDAL(session)
 
         await message_context_manager.delete_msgId_from_help_menu_dict(
             chat_id=message.chat.id
         )
 
-        await account_dal.updateMessage(
+        await account_inst_dal.updateMessage(
             session_name=account_context.account_name[message.chat.id],
             new_message=message.text,
         )
@@ -73,71 +72,6 @@ async def edit_message(message):
         )
 
 
-# --------------Change Prompt--------------
-
-
-async def _sendChangePromptText(message):
-    await message_context_manager.delete_msgId_from_help_menu_dict(
-        chat_id=message.chat.id
-    )
-
-    msg = await bot.send_message(
-        message.chat.id,
-        MarkupBuilder.sendChangePromptText,
-        reply_markup=MarkupBuilder.back_to_edit_menu(
-            account_name=account_context.account_name[message.chat.id]
-        ),
-        parse_mode="HTML",
-    )
-    await message_context_manager.add_msgId_to_help_menu_dict(
-        chat_id=message.chat.id, msgId=msg.message_id
-    )
-    await bot.set_state(message.chat.id, EditAccountActionStates.EditPrompt)
-
-
-@bot.message_handler(state=EditAccountActionStates.EditPrompt)
-async def edit_prompt(message):
-    async with async_session() as session:
-        account_dal = AccountDAL(session)
-
-        await message_context_manager.delete_msgId_from_help_menu_dict(
-            chat_id=message.chat.id
-        )
-
-        await account_dal.updatePrompt(
-            session_name=account_context.account_name[message.chat.id],
-            new_prompt=message.text,
-        )
-
-        await bot.send_message(
-            chat_id=message.chat.id, text=MarkupBuilder.prompt_edited, parse_mode="HTML"
-        )
-
-        await _showAccountActions(
-            message=message, account_name=account_context.account_name[message.chat.id]
-        )
-
-
-# --------------Change Target Channel--------------
-
-
-async def _sendChangeTargetChannelText(message):
-    await message_context_manager.delete_msgId_from_help_menu_dict(
-        chat_id=message.chat.id
-    )
-
-    msg = await bot.send_message(
-        message.chat.id,
-        MarkupBuilder.sendChangePromptText,
-        reply_markup=MarkupBuilder.back_to_edit_menu(
-            account_name=account_context.account_name[message.chat.id]
-        ),
-        parse_mode="HTML",
-    )
-    await message_context_manager.add_msgId_to_help_menu_dict(
-        chat_id=message.chat.id, msgId=msg.message_id
-    )
-    await bot.set_state(message.chat.id, EditAccountActionStates.ChangeTargetChat)
 
 
 async def _errorSetTargetChannel(message):
@@ -159,35 +93,7 @@ async def _errorSetTargetChannel(message):
     await bot.set_state(message.chat.id, EditAccountActionStates.ChangeTargetChat)
 
 
-@bot.message_handler(state=EditAccountActionStates.ChangeTargetChat)
-async def edit_target_chat(message):
-    async with async_session() as session:
-        account_dal = AccountDAL(session)
 
-        await message_context_manager.delete_msgId_from_help_menu_dict(
-            chat_id=message.chat.id
-        )
-
-        pattern = r"^@[A-Za-z0-9]+(_[A-Za-z0-9]+)*$"
-
-        if re.match(pattern, message.text):
-            await account_dal.updateTargetChat(
-                session_name=account_context.account_name[message.chat.id],
-                new_target_chat=message.text,
-            )
-
-            await bot.send_message(
-                chat_id=message.chat.id,
-                text=MarkupBuilder.target_edited,
-                parse_mode="HTML",
-            )
-
-            await _showAccountActions(
-                message=message,
-                account_name=account_context.account_name[message.chat.id],
-            )
-        else:
-            await _errorSetTargetChannel(message=message)
 
 
 # --------------Add advertisement chat--------------
@@ -234,7 +140,7 @@ async def _errorSetAdvChat(message):
 @bot.message_handler(state=EditAccountActionStates.AddAdvChat)
 async def add_adv_chat(message):
     async with async_session() as session:
-        account_dal = AccountDAL(session)
+        account_inst_dal = AccountInstDAL(session)
 
         await message_context_manager.delete_msgId_from_help_menu_dict(
             chat_id=message.chat.id
@@ -243,7 +149,7 @@ async def add_adv_chat(message):
         pattern = r"^@[A-Za-z0-9]+(_[A-Za-z0-9]+)*$"
 
         if re.match(pattern, message.text):
-            await account_dal.addAdvertisingChannel(
+            await account_inst_dal.addAdvertisingChannel(
                 session_name=account_context.account_name[message.chat.id],
                 channel_name=message.text,
             )
@@ -307,7 +213,7 @@ async def _errorRemoveAdvChat(message):
 @bot.message_handler(state=EditAccountActionStates.RemoveAdvChat)
 async def remove_adv_chat(message):
     async with async_session() as session:
-        account_dal = AccountDAL(session)
+        account_inst_dal = AccountInstDAL(session)
 
         await message_context_manager.delete_msgId_from_help_menu_dict(
             chat_id=message.chat.id
@@ -316,7 +222,7 @@ async def remove_adv_chat(message):
         pattern = r"^@[A-Za-z0-9]+(_[A-Za-z0-9]+)*$"
 
         if re.match(pattern, message.text):
-            await account_dal.removeAdvertisingChannel(
+            await account_inst_dal.removeAdvertisingChannel(
                 session_name=account_context.account_name[message.chat.id],
                 channel_name=message.text,
             )
@@ -334,48 +240,6 @@ async def remove_adv_chat(message):
 
         else:
             await _errorRemoveAdvChat(message=message)
-
-
-# --------------Reload message by ChatGPT--------------
-
-
-async def _sendReloadChatGPTMessageText(message):
-    await message_context_manager.delete_msgId_from_help_menu_dict(
-        chat_id=message.chat.id
-    )
-
-    msg = await bot.send_message(
-        message.chat.id,
-        "⏰<b>Ожидаем ответ от ChatGPT</b>",
-        reply_markup=MarkupBuilder.hide_menu,
-        parse_mode="HTML",
-    )
-    await message_context_manager.add_msgId_to_help_menu_dict(
-        chat_id=message.chat.id, msgId=msg.message_id
-    )
-
-    await ChatGPTMessageRebuilder.rewrite_message(
-        account_context.account_name[message.chat.id]
-    )
-
-    await message_context_manager.delete_msgId_from_help_menu_dict(
-        chat_id=message.chat.id
-    )
-
-    msg = await bot.send_message(
-        message.chat.id,
-        f"{MarkupBuilder.ReloadedChatGPTMessageText}\n",
-        reply_markup=MarkupBuilder.back_to_edit_menu(
-            account_name=account_context.account_name[message.chat.id]
-        ),
-        parse_mode="HTML",
-    )
-    await message_context_manager.add_msgId_to_help_menu_dict(
-        chat_id=message.chat.id, msgId=msg.message_id
-    )
-
-
-# --------------Reload message by ChatGPT--------------
 
 
 async def _sendDeleteAccountText(message):
@@ -422,19 +286,19 @@ async def _errorDeleteAccountChat(message):
 @bot.message_handler(state=EditAccountActionStates.DeleteAccount)
 async def delete_account(message):
     async with async_session() as session:
-        account_dal = AccountDAL(session)
+        account_inst_dal = AccountInstDAL(session)
         await message_context_manager.delete_msgId_from_help_menu_dict(
             chat_id=message.chat.id
         )
         if message.text == "ДА, ТОЧНО":
-            await account_dal.deleteAccount(
+            await account_inst_dal.deleteAccount(
                 session_name=account_context.account_name[message.chat.id]
             )
             if os.path.exists(
-                f"{sessions_dirPath}/{account_context.account_name[message.chat.id]}.session"
+                f"{inst_sessions_dirPath}/{account_context.account_name[message.chat.id]}.session"
             ):
                 os.remove(
-                    f"{sessions_dirPath}/{account_context.account_name[message.chat.id]}.session"
+                    f"{inst_sessions_dirPath}/{account_context.account_name[message.chat.id]}.session"
                 )
             await bot.send_message(
                 chat_id=message.chat.id,
@@ -456,12 +320,12 @@ async def _sendChangeStatusMenu(message):
         await message_context_manager.delete_msgId_from_help_menu_dict(
             chat_id=message.chat.id
         )
-        account_dal = AccountDAL(session)
-        account = await account_dal.getAccountBySessionName(
+        account_inst_dal = AccountInstDAL(session)
+        account = await account_inst_dal.getAccountBySessionName(
             session_name=account_context.account_name[message.chat.id]
         )
         status = account.status
-        ready_status = await account_dal.check_account_conditions(
+        ready_status = await account_inst_dal.check_account_conditions(
             session_name=account_context.account_name[message.chat.id]
         )
 

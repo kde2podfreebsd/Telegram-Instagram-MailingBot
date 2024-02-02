@@ -1,12 +1,15 @@
 import asyncio
 import os
 
+from telethon.tl.types import InputMediaPhoto 
 from telebot import formatting
 from telebot import types
 
 from App.Database.DAL.AccountTgDAL import AccountDAL
 from App.Database.DAL.AccountInstDAL import AccountInstDAL
 from App.Database.session import async_session
+
+from App.UserAgent.Core import UserAgentCore
 
 
 class MarkupBuilder(object):
@@ -209,6 +212,12 @@ class MarkupBuilder(object):
                 ],
                 [
                     types.InlineKeyboardButton(
+                        "Поменять описание аккаунта", 
+                        callback_data=f"chng_profile_desc#{account_name}"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
                         "🔙Назад",
                         callback_data="back_to_vis_cfg"
                     )
@@ -217,31 +226,31 @@ class MarkupBuilder(object):
         )
     
     @classmethod
-    def StoriesMenu(cls, account_name):
+    def StoriesMenu(cls):
         return types.InlineKeyboardMarkup(row_width=2,
             keyboard=[
                 [
                     types.InlineKeyboardButton(
-                        "Запуск просмотра сториз", 
-                        callback_data=f"stories_service#{account_name}"
+                        "🚀Запуск просмотра сториз", 
+                        callback_data=f"stories_service"
                     )
                 ],
                 [
                     types.InlineKeyboardButton(
-                        "Обновление базы данных премиум пользователей", 
-                        callback_data=f"db_update#{account_name}"
+                        "➕Добавить аккаунт для парсинга премиум пользователей", 
+                        callback_data=f"add_trgt_chnl"
                     )
                 ],
                 [
                     types.InlineKeyboardButton(
-                        "Сброс базы данных", 
-                        callback_data=f"drop_db#{account_name}"
+                        "➖Удалить аккаунт для парсинга премиум пользователей", 
+                        callback_data=f"delete_trgt_chnl"
                     )
                 ],
                 [
                     types.InlineKeyboardButton(
                         "🔙Назад",
-                        callback_data=f"back_to_look_stories"
+                        callback_data=f"back_to_spam_tg"
                     )
                 ],
             ],
@@ -370,6 +379,25 @@ class MarkupBuilder(object):
                 return result
 
             return split_string(out_message)
+    
+    @classmethod
+    @property
+    def hide_menu(cls):
+        cls._hide_menu: object = types.ReplyKeyboardRemove()
+        return cls._hide_menu
+
+    @classmethod
+    @property
+    def welcome_text(cls):
+        cls._welcome_text: object = formatting.format_text(
+            formatting.mbold(
+                "👋Приветствую! Это бот для управления автоматизированной рассылкой в телеграмм и инстаграм."
+            ),
+            "🔢Выбери необходимый пункт меню",
+            separator="\n",
+        )
+        return cls._welcome_text
+    
     @classmethod
     def SpamInstActionsList(cls):
         return types.InlineKeyboardMarkup(
@@ -377,8 +405,8 @@ class MarkupBuilder(object):
             keyboard=[
                 [
                     types.InlineKeyboardButton(
-                        "🤖Добавить аккаунт",
-                        callback_data="new_inst_account_menu"
+                        "🚪Войти в аккаунт инстаграм",
+                        callback_data="logging_in_inst"
                     )
                 ],
                 [
@@ -397,37 +425,88 @@ class MarkupBuilder(object):
         )
     
     @classmethod
-    def AccountInstLoggingInMenu(cls):
+    def AccountInstEditActions(cls, account_name):
         return types.InlineKeyboardMarkup(
-            row_width=2,
+            row_width=3,
             keyboard=[
                 [
                     types.InlineKeyboardButton(
-                        "Логин в аккаунт инстаграма",
-                        callback_data="logging_in_inst"
+                        text="💬Изменить сообщение",
+                        callback_data=f"change_acc_inst_msg#{account_name}",
                     )
                 ],
                 [
                     types.InlineKeyboardButton(
-                        "Добавление cookie файла сессии аккаунта",
-                        callback_data="logging_in_inst_by_cookies"
+                        text="➕Добавить рекламный чат",
+                        callback_data=f"add_target_chat#{account_name}",
                     )
                 ],
                 [
                     types.InlineKeyboardButton(
-                        "🔙Назад",
-                        callback_data="back_to_spam_inst"
+                        text="➖Убрать рекламный чат",
+                        callback_data=f"remove_target_chat#{account_name}",
                     )
-                ]
-            ]
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        text="🆙Изменить статус",
+                        callback_data=f"change_inst_status#{account_name}",
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        text="🗑Удалить аккаунт",
+                        callback_data=f"delete_inst_account#{account_name}",
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        text="🔙Назад", 
+                        callback_data="back_to_inst_acc_edit"
+                    )
+                ],
+            ],
         )
+
+
+
+    @classmethod
+    async def showAccountInstActions(cls, account_name):
+        async with async_session() as session:
+            account_inst_dal = AccountInstDAL(session)
+            account_inst_dal.getAccountBySessionName(session_name=account_name)
+            print(account_inst_dal)
+            account_username = account_inst_dal.seesion_file_path.split("/")[0].replace(".", "\\.")
+            target_chats = [
+                (target_chat.replace(".", "\\.") + "\n") for target_chat in account_inst_dal.target_channel
+            ]
+            account_message = account_inst_dal.message.replace(".", "\\.")
+
+            accountInstActionsText = f"""
+Аккаунт: {account_username}
+🎯Целевой канал: {target_chats}
+🆙Статус: {"Активен" if account_inst_dal.status else "Не активен"}
+💬Рекламное сообщение:
+-------------------
+
+{account_message}
+"""
+            print(accountInstActionsText)
+
+            def split_string(input_string, max_length=4000):
+                result = []
+                for i in range(0, len(input_string), max_length):
+                    result.append(input_string[i : i + max_length])
+                return result
+
+            return split_string(accountInstActionsText)
 
     @classmethod
     async def AccountInstListKeyboard(cls):
         async with async_session() as session:
             account_inst_dal = AccountInstDAL(session)
             acc_out = await account_inst_dal.getAllAccounts()
-            ACCOUNTS = [
+            ACCOUNTS_INST = [
                 {
                     "session_name": os.path.splitext(
                         os.path.basename(x.session_file_path)
@@ -435,14 +514,13 @@ class MarkupBuilder(object):
                 }
                 for x in acc_out
             ]
-
             mp = types.InlineKeyboardMarkup(row_width=2)
 
-            for account in ACCOUNTS:
+            for account in ACCOUNTS_INST:
                 mp.add(
                     types.InlineKeyboardButton(
                         text=account["session_name"],
-                        callback_data=f"edit_account#{account['session_name']}",
+                        callback_data=f"edit_account_inst#{account['session_name']}",
                     )
                 )
 
@@ -456,30 +534,6 @@ class MarkupBuilder(object):
 
     @classmethod
     @property
-    def hide_menu(cls):
-        cls._hide_menu: object = types.ReplyKeyboardRemove()
-        return cls._hide_menu
-
-    @classmethod
-    @property
-    def welcome_text(cls):
-        cls._welcome_text: object = formatting.format_text(
-            formatting.mbold(
-                "👋Приветствую! Это бот для управления автоматизированной рассылкой в телеграмм."
-            ),
-            "🔢Выбери необходимый пункт меню",
-            separator="\n",
-        )
-        return cls._welcome_text
-    
-    @classmethod
-    @property
-    def instLoggingInText(cls):
-        cls.instLoggingInText = "Выберите способ, с помощью которого хотите добавить аккаунт сессии инстаграм"
-        return cls.instLoggingInText
-
-    @classmethod
-    @property
     def instLoggingInSuccessfullyText(cls):
         cls.instLoggingInSuccessfullyText = "✅Логин в аккаунт инстаграма произошел успешно"
         return cls.instLoggingInSuccessfullyText
@@ -487,15 +541,38 @@ class MarkupBuilder(object):
     @classmethod
     @property
     def errorInstLoggingIn(cls):
-        cls.instLoggingInSuccessfullyText = "❌Произошла ошибка при логине в аккаунт инстаграма, введите логин и пароль еще раз или выйдите в меню логина"
-        return cls.instLoggingInSuccessfullyText
+        cls.errorInstLoggingIn = "❌Произошла ошибка при логине в аккаунт инстаграма, выйдите в меню логина и введите логин и пароль еще раз"
+        return cls.errorInstLoggingIn
+    
+    @classmethod
+    @property
+    def erorrIncorrectPasswordOrLogin(cls):
+        cls.erorrIncorrectPasswordOrLogin = "❌Вы ввели неверный пароль или логин, выйдите в меню логина и введите логин и пароль еще раз"
+    
+    @classmethod
+    @property
+    def getInstAccountLogin(cls):
+        cls.getInstAccountLogin = "Введите логин от вашего аккаунта инстаграм:"
+        return cls.getInstAccountLogin
 
     @classmethod
     @property
-    def instLoginAndPasswordQueryText(cls):
-        cls.instLoginAndPasswordQueryText = "Введите логин и пароль от аккаунта инстаграма, <b>обязательно разделяя их пробелом</b>"
-        return cls.instLoginAndPasswordQueryText
-    
+    def getInstAccountPassword(cls):
+        cls.getInstAccountPassword = "Введите пароль от вашего аккаунта инстаграм:"
+        return cls.getInstAccountPassword
+
+    @classmethod
+    @property
+    def spamInstText(cls):
+        cls.spamInstText = "🔧Настройка аккаунта сессии инстаргам"
+        return cls.spamInstText
+
+    @classmethod
+    @property
+    def sendUpdateMessageText(cls):
+        cls.sendUpdateMessageText = "✉️Введите сообщение, которое хотите, чтобы получили другие пользователи:"
+        return cls.sendUpdateMessageText
+
     @classmethod
     @property
     def new_account_state1(cls):
@@ -507,18 +584,55 @@ class MarkupBuilder(object):
     def spamTgText(cls):
         cls.spamTgText = "🔧Настройка аккаунта сессии телеграм"
         return cls.spamTgText
+    
+    @classmethod
+    async def visualConfigText(cls, account_name, isProfilePicture):
+        account = UserAgentCore(account_name)
+        entity = await account.getMe()
+        first_name = entity.first_name
+        last_name = entity.last_name
+        username = entity.username
+        account_description = await account.getProfileBio(entity)
+
+        if first_name:
+            first_name = first_name.replace('.', '\\.')
+        if last_name:
+            last_name = last_name.replace('.', '\\.')
+        if username:
+            username = username.replace('.', '\\.')
+        if account_description:
+            account_description = account_description.replace('.', '\\.')
+
+        visualConfigText = f"""
+🌄Визаульная конфигурация аккаунта сессии
+first name: {first_name}
+second name: {last_name}
+username: @{username}
+account description: 
+--------------------
+{account_description}
+--------------------
+profile picture: {"" if isProfilePicture else "None"}
+"""
+        # print(visualConfigText)
+        def split_string(input_string, max_length=4000):
+                result = []
+                for i in range(0, len(input_string), max_length):
+                    result.append(input_string[i : i + max_length])
+                return result
+        return split_string(visualConfigText)
 
     @classmethod
     @property
-    def spamInstText(cls):
-        cls.spamInstText = "🔧Настройка аккаунта сессии инстаргам"
-        return cls.spamInstText
-    
+    def changeProfileDescriptionText(cls):
+        cls.storiesMenuText = "<b>Введите сообщение, на которое хотите изменить описание аккаунта сессии:</b>"
+        return cls.storiesMenuText
+
     @classmethod
     @property
-    def visualConfigText(cls):
-        cls.visualConfigText = "🌄Визаульная конфигурация аккаунта сессии"
-        return cls.visualConfigText
+    def profileDescriptionChangedText(cls):
+        cls.storiesMenuText = "<b>✅Описание аккаунта сессии было успешно обновлено</b>"
+        return cls.storiesMenuText
 
     @classmethod
     @property
@@ -682,19 +796,6 @@ class MarkupBuilder(object):
                 ]
             ],
         )
-    
-    @classmethod
-    def back_to_new_inst_account_menu(cls):
-        return types.InlineKeyboardMarkup(
-            row_width=1,
-            keyboard=[
-                [
-                    types.InlineKeyboardButton(
-                        text="🔙Назад", callback_data="back_to_new_inst_account_menu"
-                    )
-                ]
-            ],
-        )
 
     @classmethod
     def back_to_edit_menu(cls, account_name):
@@ -723,36 +824,93 @@ class MarkupBuilder(object):
         )
 
     @classmethod
-    def back_to_stories_menu(cls, account_name):
+    def back_to_stories_menu(cls):
         return types.InlineKeyboardMarkup(
             row_width=1,
             keyboard=[
                 [
                     types.InlineKeyboardButton(
-                        text="🔙Назад", callback_data=f"back_to_stories#{account_name}"
+                        text="🔙Назад", callback_data=f"back_to_stories"
                     )
                 ]
             ],
         )
     
     @classmethod
-    @property
-    def storiesServiceText(cls):
-        cls.storiesServiceText = "Проставление реакций сториз было произведено успешно."
-        return cls.storiesServiceText
-
-    @classmethod
-    @property
-    def updateDbText(cls):
-        cls.updateDbText = "База данных пользователей с премиум аккаунтами была обновлена."
-        return cls.updateDbText
+    def back_to_logging_in_inst(cls):
+        return types.InlineKeyboardMarkup(
+            row_width=1,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        text="🔙Назад", callback_data=f"back_to_logging_in_inst"
+                    )
+                ]
+            ],
+        )
+    
     
     @classmethod
     @property
-    def deleteDbText(cls):
-        cls.deleteDbText = "База данных пользователей с премиум аккаунтами была удалена."
-        return cls.deleteDbText
+    def addTargetChannelText(cls):
+        cls.addTargetChannelText = "<b>Введите название канала для парсинга в виде @username:</b>"
+        return cls.addTargetChannelText
+    
+    @classmethod
+    @property
+    def launchStoriesText(cls):
+        cls.launchStoriesText = "<b>✅Сториз премиум пользователей из базы данных были успешно просмотренны</b>"
+        return cls.launchStoriesText
 
+    @classmethod
+    @property
+    def errorIncorrectTargetChannel(cls):
+        cls.errorIncorrectTargetChannel = "<b>❌Вы ввели неправильный тэг канала (@username), попробуйте еще раз или вернитесь в меню настройки сториз</b>"
+        return cls.errorIncorrectTargetChannel
+   
+    @classmethod
+    @property
+    def errorDbTargetChannel(cls):
+        cls.errorDbTargetChannel = "<b>❌Произошла ошибка при создание TargetChannel в базе данных, попробуйте еще раз или вернитесь в меню настройки сториз</b>"
+        return cls.errorDbTargetChannel
+    
+    @classmethod
+    @property
+    def errorNonExistentChannelUsername(cls):
+        cls.errorNonExistentChannelUsername = "<b>❌Вы ввели username канала, который не существует, попробуйте еще раз или вернитесь в меню настройки сториз</b>"
+        return cls.errorNonExistentChannelUsername
+    
+    @classmethod
+    @property
+    def errorNoAdminPrivileges(cls):
+        cls.errorNoAdminPrivileges = "<b>❌Вы ввели username канала, к которому у вас нет прав администратора, попробуйте еще раз или вернитесь в меню настройки сториз</b>"
+        return cls.errorNoAdminPrivileges
+
+    @classmethod
+    @property
+    def addedTargetChannelText(cls):
+        cls.errorIncorrectTargetChannel = "<b>✅Таргетный канал для прасинга был успешно добавлен в базу данных</b>"
+        return cls.errorIncorrectTargetChannel
+
+    @classmethod
+    @property
+    def deleteTargetChannelText(cls):
+        cls.deleteTargetChannelText = "<b>Введите название канала для парсинга, который вы хотите удалить, в виде @username:</b>"
+        return cls.deleteTargetChannelText
+
+
+    @classmethod
+    @property
+    def errorDbNonExistentTargetChannel(cls):
+        cls.deleteTargetChannelText = "<b>❌Вы пытаетесь удалить канал, который не существует в базе данных, попробуйте еще раз или вернитесь в меню настройки сториз</b>"
+        return cls.deleteTargetChannelText
+
+    @classmethod
+    @property
+    def deletedTargetChannelText(cls):
+        cls.deletedTargetChannelText = "<b>✅Таргетный канал для прасинга был успешно удален из базы данных</b>"
+        return cls.deletedTargetChannelText
+    
     @classmethod
     @property
     def editFirstNameText(cls):

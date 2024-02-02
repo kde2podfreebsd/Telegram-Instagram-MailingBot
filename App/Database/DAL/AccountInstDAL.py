@@ -10,6 +10,10 @@ from App.Logger import ApplicationLogger
 
 logger = ApplicationLogger()
 
+
+import asyncio
+from App.Database.session import async_session
+
 class AccountInstDAL:
     def __init__(self, db_session: AsyncSession):
         self.db_session = db_session
@@ -97,3 +101,11 @@ class AccountInstDAL:
         result = await self.db_session.execute(select(AccountInst))
         return [row[0] for row in result]
     
+async def main():
+    async with async_session() as session:
+        x = AccountInstDAL(session)
+        result = await x.deleteAccount("ivanov.stuff@mail.ru")
+        print(result)
+
+if __name__ == "__main__":
+    asyncio.run(main())
