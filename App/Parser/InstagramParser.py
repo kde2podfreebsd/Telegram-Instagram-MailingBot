@@ -146,4 +146,8 @@ button.click();
         except Exception as e:
             return e
     
+# selenium.common.exceptions.ElementClickInterceptedException
 
+# print(i.parse_followers(
+#     channel="don_tsolakini"
+# ))
