@@ -35,8 +35,9 @@ class Parser:
 
     def close_parser(self):
         try:
+            self.driver.quit()
             self.driver.close()
-            self.__display.stop()
+            # self.__display.stop()
         except Exception as e:
             return e
 

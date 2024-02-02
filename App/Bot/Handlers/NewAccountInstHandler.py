@@ -1,9 +1,14 @@
 from App.Bot.Markups import MarkupBuilder
 from App.Config import bot
 from App.Config import message_context_manager
+from App.Config import login_context
+from App.Config import inst_sessions_dirPath
 import asyncio
 
 from App.Parser.InstagramParser import InstagramParser
+
+from App.Database.DAL.AccountInstDAL import AccountInstDAL
+from App.Database.session import async_session
 
 from telebot.asyncio_handler_backends import State
 from telebot.asyncio_handler_backends import StatesGroup
@@ -11,98 +16,114 @@ from telebot.asyncio_handler_backends import StatesGroup
 
 
 class NewAccountInstStates(StatesGroup):
-    LoggingInManually = State()
+    LoggingIn = State()
+    GetPassword = State()
 
+async def _getInstAccountLogin(message):
+    chat_id = message.chat.id
+    await message_context_manager.delete_msgId_from_help_menu_dict(
+        chat_id=chat_id
+    )
+
+    msg = await bot.send_message(
+        message.chat.id,
+        MarkupBuilder.getInstAccountLogin,
+        reply_markup=MarkupBuilder.back_to_spam_inst(),
+        parse_mode="HTML",
+    )
+    await message_context_manager.add_msgId_to_help_menu_dict(
+        chat_id=message.chat.id, msgId=msg.message_id
+    )
+    await bot.set_state(message.chat.id, NewAccountInstStates.GetPassword)
+
+@bot.message_handler(state=NewAccountInstStates.GetPassword)
+async def _getInstAccountPassword(message):
+    chat_id = message.chat.id
+    await message_context_manager.delete_msgId_from_help_menu_dict(
+        chat_id=chat_id
+    )
+
+    login_context.updateLogin(
+        chat_id=chat_id, 
+        login=message.text
+    )
+    
+    msg = await bot.send_message(
+        message.chat.id,
+        MarkupBuilder.getInstAccountPassword,
+        reply_markup=MarkupBuilder.back_to_logging_in_inst(),
+        parse_mode="HTML",
+    )
+
+    await message_context_manager.add_msgId_to_help_menu_dict(
+        chat_id=message.chat.id, msgId=msg.message_id
+    )
+    await bot.set_state(message.chat.id, NewAccountInstStates.LoggingIn)
+
+async def _errorLogginIn(message):
+    chat_id = message.chat.id
+    await message_context_manager.delete_msgId_from_help_menu_dict(
+        chat_id=chat_id
+    )
+    msg = await bot.send_message(
+        message.chat.id,
+        text=MarkupBuilder.errorInstLoggingIn,
+        reply_markup=MarkupBuilder.back_to_spam_inst(),
+        parse_mode="HTML",
+    )
+
+    await message_context_manager.add_msgId_to_help_menu_dict(
+        chat_id=message.chat.id, msgId=msg.message_id
+    )
+
+async def _errorIncorrectPasswordOrLogin(message):
+    chat_id = message.chat.id
+    await message_context_manager.delete_msgId_from_help_menu_dict(
+        chat_id=chat_id
+    )
+    msg = await bot.send_message(
+        message.chat.id,
+        text=MarkupBuilder.erorrIncorrectPasswordOrLogin,
+        reply_markup=MarkupBuilder.back_to_spam_inst(),
+        parse_mode="HTML",
+    )
+
+    await message_context_manager.add_msgId_to_help_menu_dict(
+        chat_id=message.chat.id, msgId=msg.message_id
+    )
+
+@bot.message_handler(state=NewAccountInstStates.LoggingIn)
 async def _newAccountLoggingIn(message):
-    msg = await bot.send_message(
-        message.chat.id,
-        MarkupBuilder.instLoggingInText,
-        reply_markup=MarkupBuilder.AccountInstLoggingInMenu(),
-        parse_mode="HTML",
-    )
-
-    await message_context_manager.add_msgId_to_help_menu_dict(
-        chat_id=message.chat.id, msgId=msg.message_id
-    )
-
-async def _newAccountLoggingInCookies(message):
-
-    msg_to_del = await bot.send_message(
-        message.chat.id,
-        "⚙️",
-        reply_markup=MarkupBuilder.hide_menu,
-        parse_mode="MarkdownV2",
-    )
-
-    await bot.delete_message(
-        chat_id=message.chat.id, message_id=msg_to_del.message_id, timeout=0
-    )
-
-    msg = await bot.send_message(
-        message.chat.id,
-        MarkupBuilder.new_account_state1,
-        reply_markup=MarkupBuilder.back_to_new_inst_account_menu(),
-        parse_mode="HTML",
-    )
-
-    await message_context_manager.add_msgId_to_help_menu_dict(
-        chat_id=message.chat.id, msgId=msg.message_id
-    )
-
-async def _newAccountLoggingInManuallyText(message):
     chat_id = message.chat.id
     await message_context_manager.delete_msgId_from_help_menu_dict(
         chat_id=chat_id
     )
 
-    msg = await bot.send_message(
-        message.chat.id,
-        MarkupBuilder.instLoginAndPasswordQueryText,
-        reply_markup=MarkupBuilder.back_to_new_inst_account_menu(),
-        parse_mode="HTML",
-    )
-
-    await message_context_manager.add_msgId_to_help_menu_dict(
-        chat_id=message.chat.id, msgId=msg.message_id
-    )
-    await bot.set_state(message.chat.id, NewAccountInstStates.LoggingInManually)
-
-@bot.message_handler(state=NewAccountInstStates.LoggingInManually)
-async def _newAccountLoggingInManually(message):
-    chat_id = message.chat.id
-    await message_context_manager.delete_msgId_from_help_menu_dict(
-        chat_id=chat_id
-    )
-    login, password = message.text.split(" ")
+    login = login_context.login[chat_id]
+    password = message.text
     instagramParser = InstagramParser(
         login=login,
         password=password
     )
 
-
-    exception = await instagramParser.logging_in()
-    print(exception, type(exception))
-    if exception is None:
+    exception = await instagramParser.async_logging_in()
+    print(exception)
+    if exception == None:
         msg = await bot.send_message(
             message.chat.id,
             text=MarkupBuilder.instLoggingInSuccessfullyText,
             reply_markup=MarkupBuilder.back_to_spam_inst(),
             parse_mode="HTML",
         )
+        async with async_session() as session:
+            account_inst_dal = AccountInstDAL(session)
+            session_name = inst_sessions_dirPath + "/" + login
+            await account_inst_dal.createAcount(session_name=session_name)
 
         await message_context_manager.add_msgId_to_help_menu_dict(
             chat_id=message.chat.id, msgId=msg.message_id
         )
+    elif exception == "Incorrect password or login":
+        await _errorIncorrectPasswordOrLogin(message)
     else:
-        msg = await bot.send_message(
-            message.chat.id,
-            text=MarkupBuilder.errorInstLoggingIn,
-            reply_markup=MarkupBuilder.back_to_new_inst_account_menu(),
-            parse_mode="HTML",
-        )
-
-        await message_context_manager.add_msgId_to_help_menu_dict(
-            chat_id=message.chat.id, msgId=msg.message_id
-        )
-        await bot.set_state(message.chat.id, state=NewAccountInstStates.LoggingInManually)
-
+        await _errorLogginIn(message)

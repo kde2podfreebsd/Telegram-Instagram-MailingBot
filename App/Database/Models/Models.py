@@ -17,20 +17,12 @@ class AccountTg(Base):
     advertising_channels = Column(MutableList.as_mutable(ARRAY(String)), nullable=True)
     status = Column(Boolean, nullable=False, default=False)
 
-    chat_members = relationship("ChatMember", back_populates="account_tg")
-
-
-class ChatMember(Base):
-    __tablename__ = "chat_members"
+class TargetChannel(Base):
+    __tablename__ = "target_channels"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    first_name = Column(String, nullable=True)
-    last_name = Column(String, nullable=True)
-    username = Column(String, nullable=True)
-    is_premium = Column(Boolean, nullable=False)
-    account_tg_id = Column(Integer, ForeignKey('accounts_tg.id'))
-
-    account_tg = relationship("AccountTg", back_populates="chat_members")
+    username = Column(String, nullable=False)
+    premium_members = Column(MutableList.as_mutable(ARRAY(String)), nullable=True) 
 
 class AccountInst(Base):
     __tablename__ = "accounts_inst"
