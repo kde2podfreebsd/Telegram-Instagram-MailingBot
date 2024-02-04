@@ -30,9 +30,12 @@ from App.Bot.Handlers.SpamTgHandler import _spamTg
 from App.Bot.Handlers.SpamInstHandler import _spamInst
 
 from App.Bot.Handlers.StoriesMenuHandler import _stories
+from App.Bot.Handlers.StoriesMenuHandler import _showAccountStories
+from App.Bot.Handlers.StoriesMenuHandler import _aioschedulerStoriesMenu
 from App.Bot.Handlers.StoriesActionsHandler import _sendAddTargetChatText
 from App.Bot.Handlers.StoriesActionsHandler import _sendDeleteTargetChatText
 from App.Bot.Handlers.StoriesActionsHandler import _launchStories
+from App.Bot.Handlers.StoriesActionsHandler import _setDelayForAioschedulerText
 
 from App.Bot.Handlers.EditAccountsMenuHandler import _editAccountsMenu
 from App.Bot.Handlers.EditAccountsMenuHandler import _showAccountActions
@@ -129,35 +132,78 @@ class Bot:
 
         # ------------------stories------------------
 
-        if call.data == "look_stories" or call.data == "back_to_stories":
+        if call.data == "stories_menu" or call.data == "back_to_stories_menu":
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=call.message.chat.id
             )
             
-            await _stories(message=call.message)
+            await _showAccountStories(message=call.message)
+
+        if "look_stories" in call.data or "back_to_look_stories" in call.data:
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+            await _stories(account_name=account_name, message=call.message)
         
 
         # --------------stories actions--------------
         
-        if call.data == "add_trgt_chnl":
+        if "add_trgt_chnl" in call.data:
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
             )
             await _sendAddTargetChatText(message=call.message)
         
-        if call.data == "delete_trgt_chnl":
+        if "delete_trgt_chnl" in call.data:
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
             )
             await _sendDeleteTargetChatText(message=call.message)
         
-        if "stories_service" == call.data:
+        if "stories_service" in call.data:
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=call.message.chat.id
             )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
   
             await _launchStories(message=call.message)
+        
+        if "aiosheduler_stories_service" in call.data or "back_to_aiosheduler_stories_service" in call.data:
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+  
+            await _aioschedulerStoriesMenu(message=call.message)
 
+        if "chng_delay" in call.data:
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+  
+            await _setDelayForAioschedulerText(message=call.message)
 
         # -------editing visual account config-------
     

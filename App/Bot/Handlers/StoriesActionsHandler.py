@@ -2,10 +2,11 @@ from App.Bot.Markups import MarkupBuilder
 
 from App.Config import bot
 from App.Config import message_context_manager
+from App.Config import account_context
 
 from App.Logger import ApplicationLogger
 
-from App.Database.DAL.TargetChannelDAL import TargetChannelDAL
+from App.Database.DAL.AccountStoriesDAL import AccountStoriesDAL
 from App.Database.session import async_session
 
 from App.UserAgent.UserAgentDbPremiumUsers import DbPremiumUsersExceptions
@@ -14,20 +15,24 @@ from App.UserAgent.Core import UserAgentCore
 from telebot.asyncio_handler_backends import State, StatesGroup
 
 import re
-import os
+import aioschedule
 
 logger = ApplicationLogger()
 
 class StoriesMenuStates(StatesGroup):
     AddTargetChat = State()
     DeleteTargetChat = State()
+    SetDelay = State()
+    ChangeStatus = State()
 
 async def _sendAddTargetChatText(message):
 
     msg = await bot.send_message(
         message.chat.id,
         MarkupBuilder.addTargetChannelText,
-        reply_markup=MarkupBuilder.back_to_stories_menu(),
+        reply_markup=MarkupBuilder.back_to_stories_menu(
+            account_name = account_context.account_name[message.chat.id]
+        ),
         parse_mode="HTML"
     )
 
@@ -47,7 +52,9 @@ async def _errorTargetChat(message):
     msg = await bot.send_message(
         message.chat.id,
         MarkupBuilder.errorIncorrectTargetChannel,
-        reply_markup=MarkupBuilder.back_to_stories_menu(),
+        reply_markup=MarkupBuilder.back_to_stories_menu(
+            account_name = account_context.account_name[message.chat.id]
+        ),
         parse_mode="HTML"
     )
 
@@ -66,7 +73,9 @@ async def _errorDbTargetChat(message):
     msg = await bot.send_message(
         message.chat.id,
         MarkupBuilder.errorDbTargetChannel,
-        reply_markup=MarkupBuilder.back_to_stories_menu(),
+        reply_markup=MarkupBuilder.back_to_stories_menu(
+            account_name = account_context.account_name[message.chat.id]
+        ),
         parse_mode="HTML"
     )
     await message_context_manager.add_msgId_to_help_menu_dict(
@@ -84,7 +93,9 @@ async def _errorNonExistentChannelUsername(message):
     msg = await bot.send_message(
         message.chat.id,
         MarkupBuilder.errorNonExistentChannelUsername,
-        reply_markup=MarkupBuilder.back_to_stories_menu(),
+        reply_markup=MarkupBuilder.back_to_stories_menu(
+            account_name = account_context.account_name[message.chat.id]
+        ),
         parse_mode="HTML"
     )
     await message_context_manager.add_msgId_to_help_menu_dict(
@@ -102,7 +113,9 @@ async def _errorNoAdminPrivileges(message):
     msg = await bot.send_message(
         message.chat.id,
         MarkupBuilder.errorNoAdminPrivileges,
-        reply_markup=MarkupBuilder.back_to_stories_menu(),
+        reply_markup=MarkupBuilder.back_to_stories_menu(
+            account_name = account_context.account_name[message.chat.id]
+        ),
         parse_mode="HTML"
     )
     await message_context_manager.add_msgId_to_help_menu_dict(
@@ -125,10 +138,10 @@ async def _addTargetChat(message):
     pattern = r"^@[A-Za-z0-9]+(_[A-Za-z0-9]+)*$"
     if (re.match(pattern, channel_username)):
         async with async_session() as session:
-            target_channel_dal = TargetChannelDAL(session)
-            result = await target_channel_dal.create_target_channel(
+            account_stories_dal = AccountStoriesDAL(session)
+            result = await account_stories_dal.addTargetChannel(
                 username=channel_username,
-                session_name=os.getenv("SESSION_NAME_FOR_TG_ACCESS")
+                session_name=account_context.account_name[message.chat.id]
             )
 
             if (db_exceptions.WRONG_USERNAME_EXCEPTION == result):
@@ -142,7 +155,9 @@ async def _addTargetChat(message):
                     msg = await bot.send_message(
                         message.chat.id,
                         MarkupBuilder.addedTargetChannelText,
-                        reply_markup=MarkupBuilder.back_to_stories_menu(),
+                        reply_markup=MarkupBuilder.back_to_stories_menu(
+                            account_name = account_context.account_name[message.chat.id]
+                        ),
                         parse_mode="HTML"
                     )
                     await message_context_manager.add_msgId_to_help_menu_dict(
@@ -159,7 +174,9 @@ async def _sendDeleteTargetChatText(message):
     msg = await bot.send_message(
         message.chat.id,
         MarkupBuilder.deleteTargetChannelText,
-        reply_markup=MarkupBuilder.back_to_stories_menu(),
+        reply_markup=MarkupBuilder.back_to_stories_menu(
+            account_name = account_context.account_name[message.chat.id]
+        ),
         parse_mode="HTML"
     )
 
@@ -174,7 +191,9 @@ async def _errorDbNonExistentTargetChannel(message):
     msg = await bot.send_message(
         message.chat.id,
         MarkupBuilder.errorDbNonExistentTargetChannel,
-        reply_markup=MarkupBuilder.back_to_stories_menu(),
+        reply_markup=MarkupBuilder.back_to_stories_menu(
+            account_name = account_context.account_name[message.chat.id]
+        ),
         parse_mode="HTML"
     )
 
@@ -194,15 +213,17 @@ async def _deleteTargetChat(message):
     pattern = r"^@[A-Za-z0-9]+(_[A-Za-z0-9]+)*$"
     if (re.match(pattern, channel_username)):
         async with async_session() as session:
-            target_channel_dal = TargetChannelDAL(session)
-            result = await target_channel_dal.delete_target_channel(
-                username=channel_username
+            account_stories_dal = AccountStoriesDAL(session)
+            result = await account_stories_dal.removeTargetChannel(
+                session_name=account_context.account_name[message.chat.id]
             )
             if (result):
                 msg = await bot.send_message(
                     message.chat.id,
                     MarkupBuilder.deletedTargetChannelText,
-                    reply_markup=MarkupBuilder.back_to_stories_menu(),
+                    reply_markup=MarkupBuilder.back_to_stories_menu(
+                        account_name = account_context.account_name[message.chat.id]
+                    ),
                     parse_mode="HTML"
                 )
                 await message_context_manager.add_msgId_to_help_menu_dict(
@@ -216,22 +237,71 @@ async def _deleteTargetChat(message):
         await _errorTargetChat(message)
 
 async def _launchStories(message):
+    async with async_session() as session:
+        account_stories_dal = AccountStoriesDAL(session)
+        result = await account_stories_dal.getAccountBySessionName(
+            session_name=account_context.account_name[message.chat.id]
+        )
+        usernames = await account_stories_dal.getPremiumMemebers(
+            account_stories_id=result.id
+        )
+        userAgent = UserAgentCore(
+            session_name=account_context.account_name[message.chat.id]
+        )
+        stories_watched = await userAgent.giveReaction(usernames)
+        msg = await bot.send_message(
+            message.chat.id,
+            MarkupBuilder.launchStoriesText(stories_watched),
+            reply_markup=MarkupBuilder.back_to_stories_menu(
+                account_name = account_context.account_name[message.chat.id]
+            ),
+            parse_mode="HTML"
+        )
+        await message_context_manager.add_msgId_to_help_menu_dict(
+            chat_id=message.chat.id, 
+            msgId=msg.message_id
+    )
+
+async def _setDelayForAioschedulerText(message):
     msg = await bot.send_message(
         message.chat.id,
-        MarkupBuilder.launchStoriesText,
-        reply_markup=MarkupBuilder.back_to_stories_menu(),
+        MarkupBuilder.setDelayForAioschedulerText,
+        reply_markup=MarkupBuilder.back_to_aiosheduler_stories_service(
+            account_name = account_context.account_name[message.chat.id]
+        ),
+        parse_mode="HTML"
+    )
+
+    await message_context_manager.add_msgId_to_help_menu_dict(
+        chat_id=message.chat.id, 
+        msgId=msg.message_id
+    )
+
+    await bot.set_state(message.chat.id, StoriesMenuStates.SetDelay)
+
+@bot.message_handler(state=StoriesMenuStates.SetDelay)
+async def _setDelayForAioscheduler(message):
+    async with async_session() as session:
+        account_stories_dal = AccountStoriesDAL(session)
+        account = await account_stories_dal.getAccountBySessionName(
+            session_name=account_context.account_name[message.chat.id]
+        )
+        print(account.delay)
+        account.delay = int(message.text)
+
+    await message_context_manager.delete_msgId_from_help_menu_dict(
+        chat_id=message.chat.id
+    )
+    msg = await bot.send_message(
+        message.chat.id,
+        MarkupBuilder.DelayForAioschedulerBeenSetText,
+        reply_markup=MarkupBuilder.back_to_aiosheduler_stories_service(
+            account_name=account_context.account_name[message.chat.id]
+        ),
         parse_mode="HTML"
     )
     await message_context_manager.add_msgId_to_help_menu_dict(
         chat_id=message.chat.id, 
         msgId=msg.message_id
     )
-    async with async_session() as session:
-        target_channel_dal = TargetChannelDAL(session)
-        usernames = await target_channel_dal.get_premium_members()
-        print(usernames)
-        userAgent = UserAgentCore(
-            session_name=os.getenv("SESSION_NAME_FOR_TG_ACCESS")
-        )
-        await userAgent.giveReaction(usernames)
 

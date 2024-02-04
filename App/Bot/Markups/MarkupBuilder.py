@@ -6,6 +6,7 @@ from telebot import formatting
 from telebot import types
 
 from App.Database.DAL.AccountTgDAL import AccountDAL
+from App.Database.DAL.AccountStoriesDAL import AccountStoriesDAL
 from App.Database.DAL.AccountInstDAL import AccountInstDAL
 from App.Database.session import async_session
 
@@ -170,7 +171,7 @@ class MarkupBuilder(object):
                 [
                     types.InlineKeyboardButton(
                         "🔎Просмотр сториз",
-                        callback_data="look_stories"
+                        callback_data="stories_menu"
                     )
                 ],
                 [
@@ -226,31 +227,160 @@ class MarkupBuilder(object):
         )
     
     @classmethod
-    def StoriesMenu(cls):
+    async def AccountStoriesListKeyboard(cls):
+        async with async_session() as session:
+            account_dal = AccountStoriesDAL(session)
+            acc_out = await account_dal.getAllAccounts()
+            ACCOUNTS = [
+                {
+                    "session_name": os.path.splitext(
+                        os.path.basename(x.session_file_path)
+                    )[0]
+                }
+                for x in acc_out
+            ]
+
+            mp = types.InlineKeyboardMarkup(row_width=2)
+
+            for account in ACCOUNTS:
+                mp.add(
+                    types.InlineKeyboardButton(
+                        text=account["session_name"],
+                        callback_data=f"look_stories#{account['session_name']}",
+                    )
+                )
+
+            mp.add(
+                types.InlineKeyboardButton(
+                    text="🔙Назад", callback_data="back_to_spam_tg"
+                )
+            )
+
+            return mp
+
+    @classmethod
+    def StoriesMenu(cls, account_name):
         return types.InlineKeyboardMarkup(row_width=2,
             keyboard=[
                 [
                     types.InlineKeyboardButton(
                         "🚀Запуск просмотра сториз", 
-                        callback_data=f"stories_service"
+                        callback_data=f"stories_service#{account_name}"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "👀Отслеживание сториз", 
+                        callback_data=f"aiosheduler_stories_service#{account_name}"
                     )
                 ],
                 [
                     types.InlineKeyboardButton(
                         "➕Добавить аккаунт для парсинга премиум пользователей", 
-                        callback_data=f"add_trgt_chnl"
+                        callback_data=f"add_trgt_chnl#{account_name}"
                     )
                 ],
                 [
                     types.InlineKeyboardButton(
                         "➖Удалить аккаунт для парсинга премиум пользователей", 
-                        callback_data=f"delete_trgt_chnl"
+                        callback_data=f"delete_trgt_chnl#{account_name}"
                     )
                 ],
                 [
                     types.InlineKeyboardButton(
                         "🔙Назад",
-                        callback_data=f"back_to_spam_tg"
+                        callback_data="back_to_stories_menu"
+                    )
+                ],
+            ],
+        )
+
+    @classmethod
+    async def showAccountStoriesActions(cls, account_name):
+        async with async_session() as session:
+            account_stories_dal = AccountStoriesDAL(session)
+            account = await account_stories_dal.getAccountBySessionName(session_name=account_name)
+
+            account_username = account.session_file_path.split("/")[-1].replace(".session", "")
+            account_username.replace(".", "\\.")
+
+            target_channels = ""
+            if account.target_channels is not None:
+                for x in account.target_channels:
+                    y = x.replace(".", "\\.") if "." in x else x
+                    target_channels += f"{y}\n"
+            else:
+                target_channels = "🤷‍♂️Нет чатов для парсинга"
+
+            premium_chat_members = await account_stories_dal.getPremiumMemebers(
+                account_stories_id=account.id
+            )
+            number_premium_chat_members = len(premium_chat_members)
+
+            number_premium_chat_members_with_stories = await UserAgentCore(
+                session_name=account_name
+            ).numberOfActiveStories(premium_chat_members)
+
+            accountStoriesActionsText = f"""
+Аккаунт: {account_username}
+🎯Таргетные каналы: 
+------------------
+{target_channels}
+------------------
+💎Количество премиум подписчиков: {number_premium_chat_members}
+😎Количество премиум подписчиков с сториз: {number_premium_chat_members_with_stories}
+"""
+
+            def split_string(input_string, max_length=4000):
+                result = []
+                for i in range(0, len(input_string), max_length):
+                    result.append(input_string[i : i + max_length])
+                return result
+
+            return split_string(accountStoriesActionsText)
+    
+    @classmethod
+    async def showAccountStoriesAioschdeulerActions(cls, account_name):
+        async with async_session() as session:
+            account_stories_dal = AccountStoriesDAL(session)
+            account = await account_stories_dal.getAccountBySessionName(session_name=account_name)
+
+            account_username = account.session_file_path.split("/")[-1].replace(".session", "")
+            account_username.replace(".", "\\.")
+
+            accountStoriesActionsText = f"""
+Аккаунт: {account_username}
+Задержка: {account.delay} минут
+Статус: {account.aioscheduler_status}
+"""
+
+            def split_string(input_string, max_length=4000):
+                result = []
+                for i in range(0, len(input_string), max_length):
+                    result.append(input_string[i : i + max_length])
+                return result
+
+            return split_string(accountStoriesActionsText)
+
+    def AioshedulerStoriesMenu(account_name):
+        return types.InlineKeyboardMarkup(row_width=2,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        "⏰Изменить задержку", 
+                        callback_data=f"chng_delay#{account_name}"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "🔛Изменить статус отслеживания сториз", 
+                        callback_data=f"chng_stories_aioscheduler#{account_name}"
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        "🔙Назад",
+                        callback_data="back_to_stories_menu"
                     )
                 ],
             ],
@@ -476,7 +606,7 @@ class MarkupBuilder(object):
             account_inst_dal = AccountInstDAL(session)
             account_inst_dal.getAccountBySessionName(session_name=account_name)
             print(account_inst_dal)
-            account_username = account_inst_dal.seesion_file_path.split("/")[0].replace(".", "\\.")
+            account_username = account_inst_dal.session_file_path.split("/")[0].replace(".", "\\.")
             target_chats = [
                 (target_chat.replace(".", "\\.") + "\n") for target_chat in account_inst_dal.target_channel
             ]
@@ -771,6 +901,8 @@ profile picture: {"" if isProfilePicture else "None"}
             ],
         )
 
+
+
     @classmethod
     def back_to_spam_tg(cls):
         return types.InlineKeyboardMarkup(
@@ -824,18 +956,32 @@ profile picture: {"" if isProfilePicture else "None"}
         )
 
     @classmethod
-    def back_to_stories_menu(cls):
+    def back_to_stories_menu(cls, account_name):
         return types.InlineKeyboardMarkup(
             row_width=1,
             keyboard=[
                 [
                     types.InlineKeyboardButton(
-                        text="🔙Назад", callback_data=f"back_to_stories"
+                        text="🔙Назад", callback_data=f"back_to_look_stories#{account_name}"
                     )
                 ]
             ],
         )
     
+    @classmethod
+    def back_to_aiosheduler_stories_service(cls, account_name):
+        return types.InlineKeyboardMarkup(
+            row_width=1,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        text="🔙Назад", callback_data=
+                        f"back_to_aiosheduler_stories_service#{account_name}"
+                    )
+                ]
+            ],
+        )
+
     @classmethod
     def back_to_logging_in_inst(cls):
         return types.InlineKeyboardMarkup(
@@ -857,9 +1003,8 @@ profile picture: {"" if isProfilePicture else "None"}
         return cls.addTargetChannelText
     
     @classmethod
-    @property
-    def launchStoriesText(cls):
-        cls.launchStoriesText = "<b>✅Сториз премиум пользователей из базы данных были успешно просмотренны</b>"
+    def launchStoriesText(cls, stories_watched):
+        cls.launchStoriesText = f"<b>✅Всего было успешно просмотрено следующее количество сториз: {stories_watched}.</b>"
         return cls.launchStoriesText
 
     @classmethod
@@ -910,6 +1055,18 @@ profile picture: {"" if isProfilePicture else "None"}
     def deletedTargetChannelText(cls):
         cls.deletedTargetChannelText = "<b>✅Таргетный канал для прасинга был успешно удален из базы данных</b>"
         return cls.deletedTargetChannelText
+
+    @classmethod
+    @property
+    def setDelayForAioschedulerText(cls):
+        cls.setDelayForAioscheduler = "<b>Введите задержку для автоматического просмотра сториз в минутах:</b>"
+        return cls.setDelayForAioscheduler
+    
+    @classmethod
+    @property
+    def DelayForAioschedulerBeenSetText(cls):
+        cls.setDelayForAioscheduler = "<b>✅Новая задержка для автоматического просмотра сториз была установлена</b>"
+        return cls.setDelayForAioscheduler
     
     @classmethod
     @property
