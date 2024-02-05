@@ -34,6 +34,7 @@ class PremiumChatMember(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String, nullable=False)
     account_stories_id = Column(Integer, ForeignKey('accounts_stories.id'))
+    target_channel = Column(String, nullable=False)
 
     account_stories = relationship("AccountStories", back_populates="premium_chat_member")
 

@@ -124,6 +124,26 @@ async def _errorNoAdminPrivileges(message):
     )
     await bot.set_state(message.chat.id, state=StoriesMenuStates.AddTargetChat)
 
+async def _errorTargetChannelAlreadyExists(message):
+
+    await message_context_manager.delete_msgId_from_help_menu_dict(
+        message.chat.id
+    )
+
+    msg = await bot.send_message(
+        message.chat.id,
+        MarkupBuilder.errorTargetChannelAlreadyExists,
+        reply_markup=MarkupBuilder.back_to_stories_menu(
+            account_name = account_context.account_name[message.chat.id]
+        ),
+        parse_mode="HTML"
+    )
+    await message_context_manager.add_msgId_to_help_menu_dict(
+        chat_id=message.chat.id, 
+        msgId=msg.message_id
+    )
+    await bot.set_state(message.chat.id, state=StoriesMenuStates.AddTargetChat)
+
 @bot.message_handler(state=StoriesMenuStates.AddTargetChat)
 async def _addTargetChat(message):
 
@@ -149,6 +169,9 @@ async def _addTargetChat(message):
 
             elif (db_exceptions.ADMIN_PRIVILEGES_EXCEPTION == result):
                 await _errorNoAdminPrivileges(message)
+
+            elif ("Target channel already exists in data base" == result):
+                await _errorTargetChannelAlreadyExists(message)
 
             else:
                 if (result):
@@ -188,6 +211,10 @@ async def _sendDeleteTargetChatText(message):
     await bot.set_state(message.chat.id, StoriesMenuStates.DeleteTargetChat)
 
 async def _errorDbNonExistentTargetChannel(message):
+    await message_context_manager.delete_msgId_from_help_menu_dict(
+        message.chat.id
+    )
+
     msg = await bot.send_message(
         message.chat.id,
         MarkupBuilder.errorDbNonExistentTargetChannel,
@@ -215,7 +242,8 @@ async def _deleteTargetChat(message):
         async with async_session() as session:
             account_stories_dal = AccountStoriesDAL(session)
             result = await account_stories_dal.removeTargetChannel(
-                session_name=account_context.account_name[message.chat.id]
+                session_name=account_context.account_name[message.chat.id],
+                username=channel_username
             )
             if (result):
                 msg = await bot.send_message(
@@ -236,37 +264,100 @@ async def _deleteTargetChat(message):
     else:
         await _errorTargetChat(message)
 
+async def _errorAioscheduleStoriesActive(message):
+    await message_context_manager.delete_msgId_from_help_menu_dict(
+        message.chat.id
+    )
+    msg = await bot.send_message(
+        message.chat.id,
+        MarkupBuilder.errorAioscheduleStoriesActive,
+        reply_markup=MarkupBuilder.back_to_stories_menu(
+            account_name = account_context.account_name[message.chat.id]
+        ),
+        parse_mode="HTML"
+    )
+
+    await message_context_manager.add_msgId_to_help_menu_dict(
+        chat_id=message.chat.id, 
+        msgId=msg.message_id
+    )
+
+async def _errorNoTargetChannels(message):
+    await message_context_manager.delete_msgId_from_help_menu_dict(
+        message.chat.id
+    )
+    msg = await bot.send_message(
+        message.chat.id,
+        MarkupBuilder.errorNoTargetChannels,
+        reply_markup=MarkupBuilder.back_to_stories_menu(
+            account_name = account_context.account_name[message.chat.id]
+        ),
+        parse_mode="HTML"
+    )
+
+    await message_context_manager.add_msgId_to_help_menu_dict(
+        chat_id=message.chat.id, 
+        msgId=msg.message_id
+    )
+
 async def _launchStories(message):
     async with async_session() as session:
         account_stories_dal = AccountStoriesDAL(session)
         result = await account_stories_dal.getAccountBySessionName(
             session_name=account_context.account_name[message.chat.id]
         )
-        usernames = await account_stories_dal.getPremiumMemebers(
-            account_stories_id=result.id
-        )
-        userAgent = UserAgentCore(
-            session_name=account_context.account_name[message.chat.id]
-        )
-        stories_watched = await userAgent.giveReaction(usernames)
-        msg = await bot.send_message(
-            message.chat.id,
-            MarkupBuilder.launchStoriesText(stories_watched),
-            reply_markup=MarkupBuilder.back_to_stories_menu(
-                account_name = account_context.account_name[message.chat.id]
-            ),
-            parse_mode="HTML"
-        )
-        await message_context_manager.add_msgId_to_help_menu_dict(
-            chat_id=message.chat.id, 
-            msgId=msg.message_id
+        if (result.aioscheduler_status):
+            await _errorAioscheduleStoriesActive(message)
+        elif (result.target_channels == None):
+            await _errorNoTargetChannels(message)
+        elif (len(result.target_channels) == 0):
+            await _errorNoTargetChannels(message)
+        else:
+            usernames = await account_stories_dal.getPremiumMemebers(
+                account_stories_id=result.id
+            )
+            userAgent = UserAgentCore(
+                session_name=account_context.account_name[message.chat.id]
+            )
+            stories_watched = await userAgent.giveReaction(usernames)
+            msg = await bot.send_message(
+                message.chat.id,
+                MarkupBuilder.launchStoriesText(stories_watched),
+                reply_markup=MarkupBuilder.back_to_stories_menu(
+                    account_name = account_context.account_name[message.chat.id]
+                ),
+                parse_mode="HTML"
+            )
+            await message_context_manager.add_msgId_to_help_menu_dict(
+                chat_id=message.chat.id, 
+                msgId=msg.message_id
     )
 
 async def _setDelayForAioschedulerText(message):
     msg = await bot.send_message(
         message.chat.id,
         MarkupBuilder.setDelayForAioschedulerText,
-        reply_markup=MarkupBuilder.back_to_aiosheduler_stories_service(
+        reply_markup=MarkupBuilder.back_to_aiosheduler_stories(
+            account_name = account_context.account_name[message.chat.id]
+        ),
+        parse_mode="HTML"
+    )
+
+    await message_context_manager.add_msgId_to_help_menu_dict(
+        chat_id=message.chat.id, 
+        msgId=msg.message_id
+    )
+
+    await bot.set_state(message.chat.id, StoriesMenuStates.SetDelay)
+
+async def _errorNotIntegerDelay(message):
+    await message_context_manager.delete_msgId_from_help_menu_dict(
+        message.chat.id
+    )
+    msg = await bot.send_message(
+        message.chat.id,
+        MarkupBuilder.errorNotIntegerDelay,
+        reply_markup=MarkupBuilder.back_to_aiosheduler_stories(
             account_name = account_context.account_name[message.chat.id]
         ),
         parse_mode="HTML"
@@ -283,25 +374,58 @@ async def _setDelayForAioschedulerText(message):
 async def _setDelayForAioscheduler(message):
     async with async_session() as session:
         account_stories_dal = AccountStoriesDAL(session)
-        account = await account_stories_dal.getAccountBySessionName(
+        new_delay = message.text
+        pattern = r'^\d+$'
+        if (re.match(pattern, new_delay) and new_delay != '0'):
+            await account_stories_dal.updateDelay(
+                session_name=account_context.account_name[message.chat.id],
+                new_delay=int(new_delay)
+            )
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=message.chat.id
+            )
+            msg = await bot.send_message(
+                message.chat.id,
+                MarkupBuilder.delayForAioschedulerBeenSetText,
+                reply_markup=MarkupBuilder.back_to_aiosheduler_stories(
+                    account_name=account_context.account_name[message.chat.id]
+                ),
+                parse_mode="HTML"
+            )
+            await message_context_manager.add_msgId_to_help_menu_dict(
+                chat_id=message.chat.id, 
+                msgId=msg.message_id
+            )
+        else:
+            await _errorNotIntegerDelay(message)
+
+
+
+async def _changeStatusForAioscheduler(message, status):
+    async with async_session() as session:
+        account_stories_dal = AccountStoriesDAL(session)
+        result = await account_stories_dal.getAccountBySessionName(
             session_name=account_context.account_name[message.chat.id]
         )
-        print(account.delay)
-        account.delay = int(message.text)
+        if (result.target_channels == None):
+            await _errorNoTargetChannels(message)
+        elif (len(result.target_channels) == 0):
+            await _errorNoTargetChannels(message)
+        else:
+            msg = await bot.send_message(
+                message.chat.id,
+                MarkupBuilder.changeStatusForAioschedulerText(
+                    status=status
+                ),
+                reply_markup=MarkupBuilder.back_to_aiosheduler_stories(
+                    account_name = account_context.account_name[message.chat.id]
+                ),
+                parse_mode="HTML"
+            )
 
-    await message_context_manager.delete_msgId_from_help_menu_dict(
-        chat_id=message.chat.id
-    )
-    msg = await bot.send_message(
-        message.chat.id,
-        MarkupBuilder.DelayForAioschedulerBeenSetText,
-        reply_markup=MarkupBuilder.back_to_aiosheduler_stories_service(
-            account_name=account_context.account_name[message.chat.id]
-        ),
-        parse_mode="HTML"
-    )
-    await message_context_manager.add_msgId_to_help_menu_dict(
-        chat_id=message.chat.id, 
-        msgId=msg.message_id
-    )
+            await message_context_manager.add_msgId_to_help_menu_dict(
+                chat_id=message.chat.id, 
+                msgId=msg.message_id
+            )
+
 

@@ -1,8 +1,7 @@
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import Table
-from sqlalchemy.sql import delete
+from sqlalchemy.sql.expression import and_
 
 from App.Database.Models.Models import AccountStories, PremiumChatMember
 from App.Database.DAL.ChatMemberDAL import ChatMemberDAL
@@ -29,11 +28,11 @@ class AccountStoriesDAL:
         )
         return result.scalar()
 
-    async def createAccountStories(self, session_name, target_channels=None):
+    async def createAccountStories(self, session_name):
         try:
             session_file_path = os.path.join(sessions_dirPath, f"{session_name}.session")
             account_stories = AccountStories(
-                session_file_path=session_file_path
+                session_file_path=session_file_path,
             )
             self.db_session.add(account_stories)
             await self.db_session.flush()
@@ -69,8 +68,15 @@ class AccountStoriesDAL:
                             f"{username} added to {session_name}.target_channels"
                         )
                         for premium_user in premium_users:
-                            await chat_member_dal.createChatMember(premium_user, account_stories.id)
+                            await chat_member_dal.createChatMember(
+                                username=premium_user, 
+                                account_stories_id=account_stories.id,
+                                target_channel=username
+                            )
                         return True
+                else:
+                    logger.log_warning(f"{username} already exists in {session_name}'s target channels")
+                    return "Target channel already exists in data base"
             else:
                 logger.log_error(
                     "AccountStories doesnt exists in database or target channel already in account.target_channels"
@@ -84,11 +90,18 @@ class AccountStoriesDAL:
                 async with async_session() as session:
                     chat_member_dal = ChatMemberDAL(session)
                     id = account_stories.id
-                    chat_members = await self.db_session.execute(select(PremiumChatMember).filter(PremiumChatMember.account_stories_id == id))
+                    chat_members = await self.db_session.execute(select(PremiumChatMember).filter(
+                            and_(
+                                PremiumChatMember.account_stories_id == id,
+                                PremiumChatMember.target_channel == username
+                            )
+                        )
+                    )
                     for chat_member in chat_members.scalars():
-                        await chat_member_dal.deleteChatMember(
+                        await chat_member_dal.deleteChatMemberByIdAndTargetChannel(
                             username=chat_member.username,
-                            account_stories_id=id
+                            account_stories_id=id,
+                            target_channel=username
                         )
                 account_stories.target_channels.remove(username)
                 if len(account_stories.target_channels) == 0:
@@ -131,13 +144,46 @@ class AccountStoriesDAL:
         result = await self.db_session.execute(select(AccountStories))
         return [row[0] for row in result]
     
+    async def updateDelay(self, session_name, new_delay):
+        account = await self.getAccountBySessionName(
+            session_name=session_name
+        )
+        if account:
+            account.delay = new_delay
+            await self.db_session.commit()
+            logger.log_info(f"AccountStories {session_name}'s delay has been changed to {new_delay}")
+        else:
+            logger.log_error(f"AccountStories {session_name} does not exist in data base")
+
+    async def updateStatus(self, session_name, new_status):
+        account = await self.getAccountBySessionName(
+            session_name=session_name
+        )
+        if account:
+            account.aioscheduler_status = new_status
+            await self.db_session.commit()
+            logger.log_info(f"AccountStories {session_name}'s status has been changed to {new_status}")
+        else:
+            logger.log_error(f"AccountStories {session_name} does not exist in data base")
+    
+    async def getSessionNamesWithTrueStatus(self):
+        result = await self.db_session.execute(
+            select(AccountStories.session_file_path).filter(AccountStories.aioscheduler_status == True)
+        )
+        session_paths = [row[0] for row in result]
+        session_names = [
+            os.path.splitext(os.path.basename(path))[0] for path in session_paths
+        ]
+        return session_names
+        
+
 async def main():
     async with async_session() as session:
         account_stories_dal = AccountStoriesDAL(session)
         # await account_stories_dal.create_account_stories(f"{sessions_dirPath}/test.session")
         # result = await account_stories_dal.getAccountBySessionName("test")
         # print(result)
-        r = await account_stories_dal.getPremiumMemebers(account_stories_id=4)
+        r = await account_stories_dal.deleteAccountStories("test")
         print(r)
 
 if __name__ == "__main__":

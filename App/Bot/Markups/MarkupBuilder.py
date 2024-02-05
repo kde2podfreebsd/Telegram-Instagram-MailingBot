@@ -29,6 +29,11 @@ class MarkupBuilder(object):
     _hide_menu: object = None
     _welcome_text: object = None
 
+    _change_aiosheduler_status = None
+    _error_username_floodWait = None
+    _launch_stories_text = None
+
+
     @classmethod
     async def AccountListKeyboard(cls):
         async with async_session() as session:
@@ -271,7 +276,7 @@ class MarkupBuilder(object):
                 [
                     types.InlineKeyboardButton(
                         "👀Отслеживание сториз", 
-                        callback_data=f"aiosheduler_stories_service#{account_name}"
+                        callback_data=f"aiosheduler_stories#{account_name}"
                     )
                 ],
                 [
@@ -306,9 +311,13 @@ class MarkupBuilder(object):
 
             target_channels = ""
             if account.target_channels is not None:
+                amount_of_target_channels = len(account.target_channels)
                 for x in account.target_channels:
                     y = x.replace(".", "\\.") if "." in x else x
-                    target_channels += f"{y}\n"
+                    if (account.target_channels.index(x) != amount_of_target_channels - 1):
+                        target_channels += f"{y}\n"
+                    else:
+                        target_channels += f"{y}"
             else:
                 target_channels = "🤷‍♂️Нет чатов для парсинга"
 
@@ -350,7 +359,7 @@ class MarkupBuilder(object):
 
             accountStoriesActionsText = f"""
 Аккаунт: {account_username}
-Задержка: {account.delay} минут
+Задержка в минутах: {account.delay}
 Статус: {account.aioscheduler_status}
 """
 
@@ -362,7 +371,8 @@ class MarkupBuilder(object):
 
             return split_string(accountStoriesActionsText)
 
-    def AioshedulerStoriesMenu(account_name):
+    @classmethod
+    def AioshedulerStoriesMenu(cls, account_name):
         return types.InlineKeyboardMarkup(row_width=2,
             keyboard=[
                 [
@@ -374,13 +384,13 @@ class MarkupBuilder(object):
                 [
                     types.InlineKeyboardButton(
                         "🔛Изменить статус отслеживания сториз", 
-                        callback_data=f"chng_stories_aioscheduler#{account_name}"
+                        callback_data=f"chng_status#{account_name}"
                     )
                 ],
                 [
                     types.InlineKeyboardButton(
                         "🔙Назад",
-                        callback_data="back_to_stories_menu"
+                        callback_data=f"back_to_look_stories#{account_name}"
                     )
                 ],
             ],
@@ -969,14 +979,14 @@ profile picture: {"" if isProfilePicture else "None"}
         )
     
     @classmethod
-    def back_to_aiosheduler_stories_service(cls, account_name):
+    def back_to_aiosheduler_stories(cls, account_name):
         return types.InlineKeyboardMarkup(
             row_width=1,
             keyboard=[
                 [
                     types.InlineKeyboardButton(
                         text="🔙Назад", callback_data=
-                        f"back_to_aiosheduler_stories_service#{account_name}"
+                        f"back_to_aiosheduler_stories#{account_name}"
                     )
                 ]
             ],
@@ -1004,8 +1014,8 @@ profile picture: {"" if isProfilePicture else "None"}
     
     @classmethod
     def launchStoriesText(cls, stories_watched):
-        cls.launchStoriesText = f"<b>✅Всего было успешно просмотрено следующее количество сториз: {stories_watched}.</b>"
-        return cls.launchStoriesText
+        cls._launch_stories_text = f"<b>✅Всего было успешно просмотрено следующее количество сториз: {stories_watched}.</b>"
+        return cls._launch_stories_text
 
     @classmethod
     @property
@@ -1016,7 +1026,13 @@ profile picture: {"" if isProfilePicture else "None"}
     @classmethod
     @property
     def errorDbTargetChannel(cls):
-        cls.errorDbTargetChannel = "<b>❌Произошла ошибка при создание TargetChannel в базе данных, попробуйте еще раз или вернитесь в меню настройки сториз</b>"
+        cls.errorDbTargetChannel = "<b>❌Произошла ошибка при добавлении target channel в базу данных, попробуйте еще раз или вернитесь в меню настройки сториз</b>"
+        return cls.errorDbTargetChannel
+    
+    @classmethod
+    @property
+    def errorTargetChannelAlreadyExists(cls):
+        cls.errorDbTargetChannel = "<b>❌Данный target сhannel уже существует в базе данных, попробуйте еще раз или вернитесь в меню настройки сториз</b>"
         return cls.errorDbTargetChannel
     
     @classmethod
@@ -1064,10 +1080,33 @@ profile picture: {"" if isProfilePicture else "None"}
     
     @classmethod
     @property
-    def DelayForAioschedulerBeenSetText(cls):
+    def errorNotIntegerDelay(cls):
+        cls.errorNotIntegerDelay = "<b>❌Задержка является натуральным числом, введите её заново или перейдите в меню отслеживания сториз</b>"
+        return cls.errorNotIntegerDelay
+
+    @classmethod
+    @property
+    def delayForAioschedulerBeenSetText(cls):
         cls.setDelayForAioscheduler = "<b>✅Новая задержка для автоматического просмотра сториз была установлена</b>"
         return cls.setDelayForAioscheduler
     
+    @classmethod
+    def changeStatusForAioschedulerText(cls, status: bool):
+        cls._change_aiosheduler_status = f"<b>Статус аккаунта для отслеживания сториз был изменен на: {status}</b>"
+        return cls._change_aiosheduler_status
+    
+    @classmethod
+    @property
+    def errorAioscheduleStoriesActive(cls):
+        cls.errorAioscheduleStoriesActive = "<b>❌В настоящее время включено отслеживание сториз.\n Поменяйте статус аккаунта в \"👀Отслеживание сториз\"</b>"
+        return cls.errorAioscheduleStoriesActive
+    
+    @classmethod
+    @property
+    def errorNoTargetChannels(cls):
+        cls.errorNoTargetChannels = "<b>❌Нет таргетных каналов, из которых можно спарсить подписчиков.\n Добавьте их с помощью \"➕Добавить аккаунт для парсинга премиум пользователей\"</b>"
+        return cls.errorNoTargetChannels
+
     @classmethod
     @property
     def editFirstNameText(cls):
@@ -1106,8 +1145,8 @@ profile picture: {"" if isProfilePicture else "None"}
     
     @classmethod
     def errorUsernameFloodWait(cls, time_left):
-        cls.errorUsernameFloodWait = f"<b>❌ Вы изменяли свой username слишком часто за последнее время. До следующего изменения username осталось {time_left} секунд</b>"
-        return cls.errorUsernameFloodWait
+        cls._error_username_floodWait = f"<b>❌ Вы изменяли свой username слишком часто за последнее время. До следующего изменения username осталось {time_left} секунд</b>"
+        return cls._error_username_floodWait
 
     @classmethod
     @property

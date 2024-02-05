@@ -1,49 +1,41 @@
-# import asyncio
-# import random
+import asyncio
+import uvloop
+import aioschedule
 
-# import uvloop
+from App.Database.DAL.AccountStoriesDAL import AccountStoriesDAL
+from App.Database.session import async_session
+from App.UserAgent.Core.UserAgentCore import UserAgentCore
 
-# from App.Config import singleton
-# from App.Database.DAL.AccountStoriesDAL import AccountStoriesDAL
-# from App.Database.session import async_session
-# from App.UserAgent.Core.UserAgentCore import UserAgentCore
-# import aioschedule
+async def mainLayer():
+    async with async_session() as session:
+        account_stories_dal = AccountStoriesDAL(session)
+        uvloop.install()
 
-# async def mainLayer():
-#     async with async_session() as session:
-#         account_stories_dal = AccountStoriesDAL(session)
-        
+        while True:
+            accounts_session_names = await account_stories_dal.getSessionNamesWithTrueStatus()
+            user_agent_clients = [UserAgentCore(session_name) for session_name in accounts_session_names]
 
+            for client in user_agent_clients:
+                asyncio.create_task(schedule_reaction(client, account_stories_dal))
 
+            await asyncio.sleep(60)  # Ждем 60 секунд перед повторной итерацией
 
-#         uvloop.install()
+async def schedule_reaction(client, account_stories_dal):
+    account = await account_stories_dal.getAccountBySessionName(client.session_name)
+    delay = account.delay
+    usernames_job = aioschedule.every().day.do(update_usernames, account_stories_dal, account)
 
-#         while True:
-#             accounts = await account_dal.getSessionNamesWithTrueStatus()
+    if account:
+        aioschedule.every(delay).minutes.do(client.giveReaction, usernames_job)
 
-#             userAgent_clients = [UserAgentCore(x) for x in accounts]
+    while True:
+        await aioschedule.run_pending()
+        await asyncio.sleep(1)
 
-#             tasks = []
-#             for client in userAgent_clients:
-#                 account = await account_dal.getAccountBySessionName(client.session_name)
-#                 if account and account.advertising_channels:
-#                     for chats in account.advertising_channels:
-#                         last_message_id = message_tracker.get_last_message_id(client.session_name, chats)
-#                         if last_message_id:
-#                             await client.deleteMsg(chat=chats, message_ids=last_message_id)
-#                             message_tracker.clear_last_message_id(client.session_name, chats)
-
-#                         msg = await client.sendMsg(chat=chats, message=account.message)
-
-#                         message_tracker.record_message(client.session_name, chats, msg['msg_ids'])
-
-#                         print(msg)
-
-#                         delay = random.randint(5, 10)
-#                         print(f"delay: {delay} for account: {client.session_name}")
-#                         aioschedule.every(1).to(delay).seconds.do(sleep)
-#             await asyncio.sleep(10)
+async def update_usernames(account_stories_dal, account):
+    await account_stories_dal.getPremiumMemebers(account.id)
+   
 
 
-# if __name__ == "__main__":
-#     asyncio.run(mainLayer())
+if __name__ == "__main__":
+    asyncio.run(mainLayer())

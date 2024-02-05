@@ -36,6 +36,9 @@ from App.Bot.Handlers.StoriesActionsHandler import _sendAddTargetChatText
 from App.Bot.Handlers.StoriesActionsHandler import _sendDeleteTargetChatText
 from App.Bot.Handlers.StoriesActionsHandler import _launchStories
 from App.Bot.Handlers.StoriesActionsHandler import _setDelayForAioschedulerText
+from App.Bot.Handlers.StoriesActionsHandler import _changeStatusForAioscheduler
+from App.Bot.Handlers.StoriesActionsHandler import _errorNoTargetChannels
+
 
 from App.Bot.Handlers.EditAccountsMenuHandler import _editAccountsMenu
 from App.Bot.Handlers.EditAccountsMenuHandler import _showAccountActions
@@ -52,6 +55,7 @@ from App.Config import bot
 from App.Config import message_context_manager
 from App.Config import singleton
 from App.Database.DAL.AccountTgDAL import AccountDAL
+from App.Database.DAL.AccountStoriesDAL import AccountStoriesDAL
 from App.Database.session import async_session
 from App.Database.DAL.AccountInstDAL import AccountInstDAL
 
@@ -183,7 +187,7 @@ class Bot:
   
             await _launchStories(message=call.message)
         
-        if "aiosheduler_stories_service" in call.data or "back_to_aiosheduler_stories_service" in call.data:
+        if "aiosheduler_stories" in call.data or "back_to_aiosheduler_stories" in call.data:
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=call.message.chat.id
             )
@@ -204,6 +208,32 @@ class Bot:
             )
   
             await _setDelayForAioschedulerText(message=call.message)
+        
+        if "chng_status" in call.data:
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+            async with async_session() as session:
+                account_stories_dal = AccountStoriesDAL(session)
+                account = await account_stories_dal.getAccountBySessionName(
+                    session_name=account_name
+                )
+                if (account.target_channels == None):
+                    await _errorNoTargetChannels(call.message)
+                elif (len(account.target_channels) == 0):
+                    await _errorNoTargetChannels(call.message)
+                else:
+                    new_status = (False if account.aioscheduler_status else True)
+                    await account_stories_dal.updateStatus(
+                        session_name=account_name,
+                        new_status=new_status
+                    )
+    
+                    await _changeStatusForAioscheduler(message=call.message, status=new_status)
 
         # -------editing visual account config-------
     
