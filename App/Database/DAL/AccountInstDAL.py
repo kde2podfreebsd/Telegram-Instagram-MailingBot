@@ -164,7 +164,7 @@ class AccountInstDAL:
             await self.db_session.flush()
 
             os.remove(path=f"{inst_sessions_dirPath}/{session_name}.cookies")
-            
+
             logger.log_info(f"AccountInst {session_name} has been removed from the data base")
             return True
         else:
@@ -196,10 +196,17 @@ class AccountInstDAL:
         result = await self.db_session.execute(select(AccountInst))
         return [row[0] for row in result]
     
+    async def getFollowers(self, account_inst_id):
+        async with async_session() as session:
+            chat_member_dal = FollowerDAL(session)
+            result = await chat_member_dal.db_session.execute(select(Follower).filter(Follower.account_inst_id == account_inst_id))
+            return [member.username for member in result.scalars()]
+    
 async def main():
     async with async_session() as session:
         x = AccountInstDAL(session)
-        result = await x.createAcount(session_name="ivanov.stuff@mail.ru")
+        account = await x.getAccountBySessionName(session_name="ivanov.stuff@mail.ru")
+        result = await x.getFollowers(account.id)
         print(result)
 
 if __name__ == "__main__":

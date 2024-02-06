@@ -133,6 +133,9 @@ class Bot:
 
 
         if "viscfg_account" in call.data or "back_to_viscfg_account" in call.data:
+            await bot.delete_state(
+                user_id=call.message.chat.id, chat_id=call.message.chat.id
+            )
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=call.message.chat.id
             )
@@ -150,6 +153,9 @@ class Bot:
             await _showAccountStories(message=call.message)
 
         if "look_stories" in call.data or "back_to_look_stories" in call.data:
+            await bot.delete_state(
+                user_id=call.message.chat.id, chat_id=call.message.chat.id
+            )
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=call.message.chat.id
             )
@@ -194,6 +200,9 @@ class Bot:
             await _launchStories(message=call.message)
         
         if "aiosheduler_stories" in call.data or "back_to_aiosheduler_stories" in call.data:
+            await bot.delete_state(
+                user_id=call.message.chat.id, chat_id=call.message.chat.id
+            )
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=call.message.chat.id
             )
@@ -412,6 +421,9 @@ class Bot:
             await _editAccountsInstMenu(message=call.message)
 
         if "edit_inst_account" in call.data or "back_to_edit_inst_account" in call.data:
+            await bot.delete_state(
+                user_id=call.message.chat.id, chat_id=call.message.chat.id
+            )
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=call.message.chat.id
             )

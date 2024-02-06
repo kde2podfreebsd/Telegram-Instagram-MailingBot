@@ -4,6 +4,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from seleniumwire import undetected_chromedriver as uc
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.common.keys import Keys
 
 from App.Config import inst_sessions_dirPath
 from App.Logger import ApplicationLogger
@@ -30,6 +31,7 @@ class InstagramParserExceptions():
         self.IncorrectPasswordOrLogin = Exception("You have entered invalid password or login")
         self.PageNotFound = Exception("The channel name you have entered is invalid")
         self.SuspendedAccount = Exception("This instagram account has been suspended")
+        self.PrivateAccount = Exception("Message cannot be sent to user, as they prhobited messaging them")
 
 
 class InstagramParser(Parser):
@@ -142,6 +144,43 @@ class InstagramParser(Parser):
             time.sleep(2)  
             curr_followers_count += step
 
+    async def async_send_message(self, message, channel):
+        loop = asyncio.get_event_loop()
+        partial_send_message = functools.partial(self.send_message, message, channel)
+        result = await loop.run_in_executor(None, partial_send_message)
+        return result
+
+    def send_message(self, message, channel):
+        try:
+            wait = WebDriverWait(self.driver, 15)
+
+            self.driver.get(url="https://instagram.com/")
+            wait.until(EC.element_to_be_clickable((By.XPATH, COOKIES_AGREEMENT_XPATH))).click()
+            
+            self.load_cookies()
+
+            self.driver.get(url=f"https://instagram.com/{channel}/")
+            try:
+                self.driver.find_element(By.XPATH, PAGE_NOT_FOUND_XPATH)
+            except Exception as e:
+                pass
+            else:
+                logger.log_error(f"User with channel name {channel} has not been found, such page does not exist")
+                raise InstagramParserExceptions.PageNotFound
+            try:
+                wait.until(EC.element_to_be_clickable((By.XPATH, MESSAGE_BUTTON_XPATH))).click()
+            except Exception as e:
+                pass
+            else:
+                logger.log_error(f"Message cannot be sent to user with channel name {channel}, as they prhobited messaging them")
+                raise InstagramParserExceptions.PageNotFound
+            wait.until(EC.element_to_be_clickable((By.XPATH, TURN_ON_NOTIFICATIONS_BUTTON_XPATH))).click()
+            send_message_field = wait.until(EC.presence_of_element_located((By.XPATH, SEND_MESSAGE_FIELD_XPATH)))
+            send_message_field.send_keys(message)
+            send_message_field.send_keys(Keys.ENTER)
+
+        except Exception as e:
+            return e
 
     def dump_cookies(self):
         try:
@@ -152,7 +191,6 @@ class InstagramParser(Parser):
         
     def load_cookies(self):
         try:
-            print(self.login)
             cookies = pickle.load(open(f"{inst_sessions_dirPath}/{self.login}.cookies", "rb"))
             for cookie in cookies:
                 self.driver.add_cookie(cookie)
@@ -174,13 +212,12 @@ async def main():
         login="",
         password=""
     )
-    result = await i.async_logging_in()
-    result = await i.async_parse_follower(
-        channel="dlgkdlkhjldkhkdl"
-    )
+    # result = await i.async_logging_in()
+    # result = await i.async_parse_follower(
+    #     channel="dlgkdlkhjldkhkdl"
+    # )
+    result = await i.async_send_message(message=":)", channel="don_tsolakini")
     print(result)
-    instagramParserExceptions = InstagramParserExceptions()
-    print(instagramParserExceptions.IncorrectPasswordOrLogin)
 
 if __name__ == "__main__":
     asyncio.run(main())
