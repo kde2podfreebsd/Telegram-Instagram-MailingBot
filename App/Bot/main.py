@@ -39,11 +39,17 @@ from App.Bot.Handlers.StoriesActionsHandler import _setDelayForAioschedulerText
 from App.Bot.Handlers.StoriesActionsHandler import _changeStatusForAioscheduler
 from App.Bot.Handlers.StoriesActionsHandler import _errorNoTargetChannels
 
-
 from App.Bot.Handlers.EditAccountsMenuHandler import _editAccountsMenu
 from App.Bot.Handlers.EditAccountsMenuHandler import _showAccountActions
 from App.Bot.Handlers.EditAccountsInstMenuHandler import _editAccountsInstMenu
 from App.Bot.Handlers.EditAccountsInstMenuHandler import _showAccountInstActions
+
+from App.Bot.Handlers.EditAccountInstActionsHandler import _sendUpdateMessageText
+from App.Bot.Handlers.EditAccountInstActionsHandler import _sendAddTargetChannelText
+from App.Bot.Handlers.EditAccountInstActionsHandler import _sendRemoveTargetChannelText
+from App.Bot.Handlers.EditAccountInstActionsHandler import _sendDeleteAccountInstText
+from App.Bot.Handlers.EditAccountInstActionsHandler import _changeStatusAccountInst
+from App.Bot.Handlers.EditAccountInstActionsHandler import _errorNoTargetInstChannels
 
 from App.Bot.Handlers.NewAccountHandler import _newAccountMenu
 from App.Bot.Handlers.NewAccountInstHandler import _getInstAccountLogin
@@ -405,7 +411,7 @@ class Bot:
 
             await _editAccountsInstMenu(message=call.message)
 
-        if "edit_account_inst" in call.data:
+        if "edit_inst_account" in call.data or "back_to_edit_inst_account" in call.data:
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=call.message.chat.id
             )
@@ -414,9 +420,77 @@ class Bot:
                 chat_id=call.message.chat.id, account_name=account_name
             )
 
-            await _showAccountInstActions(message=call.message)
+            await _showAccountInstActions(message=call.message, account_name=account_name)
         
+        if "change_acc_inst_msg" in call.data:
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
 
+            await _sendUpdateMessageText(message=call.message)
+
+        if "add_target_chat" in call.data:
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+
+            await _sendAddTargetChannelText(message=call.message)
+        
+        if "remove_target_chat" in call.data:
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+
+            await _sendRemoveTargetChannelText(message=call.message)
+        
+        if "delete_inst_account" in call.data:
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+
+            await _sendDeleteAccountInstText(message=call.message)
+        
+        if "chng_inst_status" in call.data:
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+            async with async_session() as session:
+                account_inst_dal = AccountInstDAL(session)
+                account = await account_inst_dal.getAccountBySessionName(
+                    session_name=account_name
+                )
+                if (account.target_channels == None):
+                    await _errorNoTargetInstChannels(call.message)
+                elif (len(account.target_channels) == 0):
+                    await _errorNoTargetInstChannels(call.message)
+                else:
+                    new_status = (False if account.status else True)
+                    await account_inst_dal.updateStatus(
+                        session_name=account_name,
+                        new_status=new_status
+                    )
+                    await _changeStatusAccountInst(message=call.message, status=new_status)
+        
 
             
     @staticmethod

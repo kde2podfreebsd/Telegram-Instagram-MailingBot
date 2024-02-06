@@ -231,6 +231,27 @@ async def _errorDbNonExistentTargetChannel(message):
 
     await bot.set_state(message.chat.id, StoriesMenuStates.DeleteTargetChat)
 
+async def _errorTargetChatRemoval(message):
+
+    await message_context_manager.delete_msgId_from_help_menu_dict(
+        message.chat.id
+    )
+
+    msg = await bot.send_message(
+        message.chat.id,
+        MarkupBuilder.errorIncorrectTargetChannel,
+        reply_markup=MarkupBuilder.back_to_stories_menu(
+            account_name = account_context.account_name[message.chat.id]
+        ),
+        parse_mode="HTML"
+    )
+
+    await message_context_manager.add_msgId_to_help_menu_dict(
+        chat_id=message.chat.id, 
+        msgId=msg.message_id
+    )
+    await bot.set_state(message.chat.id, state=StoriesMenuStates.DeleteTargetChat)
+
 @bot.message_handler(state=StoriesMenuStates.DeleteTargetChat)
 async def _deleteTargetChat(message):
     await message_context_manager.delete_msgId_from_help_menu_dict(
@@ -262,7 +283,7 @@ async def _deleteTargetChat(message):
                 await _errorDbNonExistentTargetChannel(message)
 
     else:
-        await _errorTargetChat(message)
+        await _errorTargetChatRemoval(message)
 
 async def _errorAioscheduleStoriesActive(message):
     await message_context_manager.delete_msgId_from_help_menu_dict(
@@ -398,8 +419,6 @@ async def _setDelayForAioscheduler(message):
             )
         else:
             await _errorNotIntegerDelay(message)
-
-
 
 async def _changeStatusForAioscheduler(message, status):
     async with async_session() as session:

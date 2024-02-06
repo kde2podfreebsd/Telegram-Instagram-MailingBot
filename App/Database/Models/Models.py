@@ -43,8 +43,9 @@ class AccountInst(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     session_file_path = Column(String, nullable=False)
-    target_channel = Column(String, nullable=True, default="Не указан")
+    target_channels = Column(MutableList.as_mutable(ARRAY(String)), nullable=True)
     message = Column(String, nullable=True, default="Не указано")
+    status = Column(Boolean, nullable=False, default=False)
     
     followers = relationship("Follower", back_populates="account_inst")
 
@@ -54,6 +55,7 @@ class Follower(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String, nullable=False)
     account_inst_id = Column(Integer, ForeignKey('accounts_inst.id'))
+    target_channel = Column(String, nullable=False)
 
     account_inst = relationship("AccountInst", back_populates="followers")
 

@@ -3,10 +3,13 @@ import os
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.sql.expression import and_
 
 from App.Config import inst_sessions_dirPath
-from App.Database.Models.Models import AccountInst
+from App.Database.Models.Models import AccountInst, Follower
 from App.Logger import ApplicationLogger
+from App.Database.DAL.FollowerDAL import FollowerDAL
+from App.Parser.InstagramParser import InstagramParser
 
 logger = ApplicationLogger()
 
@@ -31,7 +34,6 @@ class AccountInstDAL:
         session_name,
         target_channel=None,
         message=None,
-        status=False
     ):
         session_file_path = os.path.join(inst_sessions_dirPath, f"{session_name}.cookies")
 
@@ -42,19 +44,18 @@ class AccountInstDAL:
         try:
             existing_account = await self.getAccountBySessionName(session_name)
             if existing_account:
-                logger.log_error(f"Account already exist with this name {session_name}")
+                logger.log_error(f"AccountInst already exist with this name {session_name}")
                 return None
 
             account = AccountInst(
                 session_file_path=session_file_path,
-                target_channel=target_channel,
+                target_channels=target_channel,
                 message=message,
-                status=status,
             )
             self.db_session.add(account)
             await self.db_session.flush()
 
-            logger.log_info("Account added to database")
+            logger.log_info(f"AccountInst {session_name} added to database")
             return account
 
         except IntegrityError:
@@ -62,41 +63,135 @@ class AccountInstDAL:
             logger.log_warning("IntegrityError, db rollback")
             return None
     
-    async def deleteAccount(self, session_name):
-        account = await self.getAccountBySessionName(session_name)
-        if account:
-            await self.db_session.delete(account)
-            await self.db_session.flush()
-            logger.log_info("Account deleted from database")
-            return True
-        else:
-            logger.log_error("Account doesnt exists in database")
-            return False
-    
-    async def updateTargetChannel(self, session_name, new_target_channel):
-        account = await self.getAccountBySessionName(session_name)
-        if account:
-            account.target_channel = new_target_channel
-            await self.db_session.flush()
-            logger.log_info(
-                f"Updated target chat: {new_target_channel} on account {session_name}"
+    async def addTargetInstChannel(self, target_channel, session_name):
+        account = await self.getAccountBySessionName(
+            session_name=session_name
+        )
+        async with async_session() as session:
+            follower_dal = FollowerDAL(session)
+
+            instagramParser = InstagramParser(
+                login=session_name,
+                password="null"
             )
-            return True
-        else:
-            logger.log_error("Account doesnt exists in database")
-            return False
+
+            if (account):
+                if account.target_channels is None:
+                    account.target_channels = []
+                    logger.log_info("Init Mutable ARRAY = []")
+                
+                if target_channel not in account.target_channels:
+                    followers = await instagramParser.async_parse_follower(channel=target_channel)
+                    if (isinstance(followers, list)):
+                        account.target_channels.append(target_channel)
+                        self.db_session.add(account)
+                        await self.db_session.flush()
+                        logger.log_info(
+                            f"{target_channel} added to {session_name}.target_channels"
+                        )
+                        for follower in followers:
+                            await follower_dal.createFollower(
+                                username=follower,
+                                account_inst_id=account.id,
+                                target_channel=target_channel
+                            )
+                    else:
+                        logger.log_error(f"An error occured while parsing {target_channel}'s followers: either followers are private or selenium didn't parse website properly")
+                        return followers
+                else:
+                    logger.log_warning(f"{target_channel} already exists in {session_name}'s target channels")
+                    return "Target channel already exists in data base"
+                return True
+            else:
+                logger.log_error(
+                    "AccountInst doesnt exists in database or target channel already in account.target_channels"
+                )
+                return False
+
+    async def removeTargetChannel(self, session_name, target_channel):
+        account = await self.getAccountBySessionName(session_name)
+        if account and account.target_channels:
+            if target_channel in account.target_channels:
+                async with async_session() as session:
+                    follower_dal = FollowerDAL(session)
+                    id = account.id
+                    followers = await self.db_session.execute(select(Follower).filter(
+                            and_(
+                                Follower.account_inst_id == id,
+                                Follower.target_channel == target_channel
+                            )
+                        )
+                    )
+                    for follower in followers.scalars():
+                        await follower_dal.deleteFollowerByIdAndTargetChannel(
+                            username=follower.username,
+                            account_inst_id=id,
+                            target_channel=target_channel
+                        )
+                account.target_channels.remove(target_channel)
+                await self.db_session.flush()
+                logger.log_info(
+                    f"{target_channel} removed from {session_name}.target_channels"
+                )
+                return True
+        logger.log_error(
+            "AccountInst doesnt exists in database or target channel not in account_inst_dal.target_channels"
+        )
+        return False
 
     async def updateMessage(self, session_name, new_message):
         account = await self.getAccountBySessionName(session_name)
         if account:
             account.message = new_message
             await self.db_session.flush()
-            logger.log_info(f"Updated message: {new_message} on account {session_name}")
+            logger.log_info(f"Updated message: {new_message} on AccountInst {session_name}")
             return True
         else:
             logger.log_error("Account doesnt exists in database")
             return False
     
+    async def deleteAccountInst(self, session_name):
+        account_inst = await self.getAccountBySessionName(session_name)
+        if account_inst:
+            target_channels = account_inst.target_channels
+            if target_channels:
+                for target_channel in target_channels:
+                    await self.removeTargetChannel(
+                        session_name=session_name, 
+                        target_channel=target_channel
+                    )
+            await self.db_session.delete(account_inst)
+            await self.db_session.flush()
+
+            os.remove(path=f"{inst_sessions_dirPath}/{session_name}.cookies")
+            
+            logger.log_info(f"AccountInst {session_name} has been removed from the data base")
+            return True
+        else:
+            logger.log_error("AccountInst doesn't exist in database")
+            return False
+    
+    async def updateStatus(self, session_name, new_status):
+        account = await self.getAccountBySessionName(
+            session_name=session_name
+        )
+        if account:
+            account.status = new_status
+            await self.db_session.commit()
+            logger.log_info(f"AccountInst {session_name}'s status has been changed to {new_status}")
+        else:
+            logger.log_error(f"AccountInst {session_name} does not exist in data base")
+    
+    async def getSessionNamesWithTrueStatus(self):
+        result = await self.db_session.execute(
+            select(AccountInst.session_file_path).filter(AccountInst.status == True)
+        )
+        session_paths = [row[0] for row in result]
+        session_names = [
+            os.path.splitext(os.path.basename(path))[0] for path in session_paths
+        ]
+        return session_names
+
     async def getAllAccounts(self):
         result = await self.db_session.execute(select(AccountInst))
         return [row[0] for row in result]
@@ -104,7 +199,7 @@ class AccountInstDAL:
 async def main():
     async with async_session() as session:
         x = AccountInstDAL(session)
-        result = await x.deleteAccount("ivanov.stuff@mail.ru")
+        result = await x.createAcount(session_name="ivanov.stuff@mail.ru")
         print(result)
 
 if __name__ == "__main__":

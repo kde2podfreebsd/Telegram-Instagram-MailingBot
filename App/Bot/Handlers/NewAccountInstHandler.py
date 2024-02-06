@@ -6,6 +6,7 @@ from App.Config import inst_sessions_dirPath
 import asyncio
 
 from App.Parser.InstagramParser import InstagramParser
+from App.Parser.InstagramParser import InstagramParserExceptions
 
 from App.Database.DAL.AccountInstDAL import AccountInstDAL
 from App.Database.session import async_session
@@ -75,6 +76,7 @@ async def _errorLogginIn(message):
     await message_context_manager.add_msgId_to_help_menu_dict(
         chat_id=message.chat.id, msgId=msg.message_id
     )
+    await bot.delete_state(message.chat.id, message.chat.id)
 
 async def _errorIncorrectPasswordOrLogin(message):
     chat_id = message.chat.id
@@ -83,7 +85,7 @@ async def _errorIncorrectPasswordOrLogin(message):
     )
     msg = await bot.send_message(
         message.chat.id,
-        text=MarkupBuilder.erorrIncorrectPasswordOrLogin,
+        text=MarkupBuilder.errorIncorrectPasswordOrLogin,
         reply_markup=MarkupBuilder.back_to_spam_inst(),
         parse_mode="HTML",
     )
@@ -91,9 +93,28 @@ async def _errorIncorrectPasswordOrLogin(message):
     await message_context_manager.add_msgId_to_help_menu_dict(
         chat_id=message.chat.id, msgId=msg.message_id
     )
+    await bot.delete_state(message.chat.id, message.chat.id)
+
+async def _errorSuspendedAccount(message):
+    chat_id = message.chat.id
+    await message_context_manager.delete_msgId_from_help_menu_dict(
+        chat_id=chat_id
+    )
+    msg = await bot.send_message(
+        message.chat.id,
+        text=MarkupBuilder.errorSuspendedAccount,
+        reply_markup=MarkupBuilder.back_to_spam_inst(),
+        parse_mode="HTML",
+    )
+
+    await message_context_manager.add_msgId_to_help_menu_dict(
+        chat_id=message.chat.id, msgId=msg.message_id
+    )
+    await bot.delete_state(message.chat.id, message.chat.id)
 
 @bot.message_handler(state=NewAccountInstStates.LoggingIn)
 async def _newAccountLoggingIn(message):
+    instagramParserExceptions = InstagramParserExceptions()
     chat_id = message.chat.id
     await message_context_manager.delete_msgId_from_help_menu_dict(
         chat_id=chat_id
@@ -107,7 +128,6 @@ async def _newAccountLoggingIn(message):
     )
 
     exception = await instagramParser.async_logging_in()
-    print(exception)
     if exception == None:
         msg = await bot.send_message(
             message.chat.id,
@@ -117,13 +137,15 @@ async def _newAccountLoggingIn(message):
         )
         async with async_session() as session:
             account_inst_dal = AccountInstDAL(session)
-            session_name = inst_sessions_dirPath + "/" + login
+            session_name = login
             await account_inst_dal.createAcount(session_name=session_name)
 
         await message_context_manager.add_msgId_to_help_menu_dict(
             chat_id=message.chat.id, msgId=msg.message_id
         )
-    elif exception == "Incorrect password or login":
+    elif str(exception) == str(instagramParserExceptions.IncorrectPasswordOrLogin):
         await _errorIncorrectPasswordOrLogin(message)
+    elif str(exception) == str(instagramParserExceptions.SuspendedAccount):
+        await _errorSuspendedAccount(message)
     else:
         await _errorLogginIn(message)

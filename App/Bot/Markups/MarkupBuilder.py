@@ -32,6 +32,7 @@ class MarkupBuilder(object):
     _change_aiosheduler_status = None
     _error_username_floodWait = None
     _launch_stories_text = None
+    _change_status_account_inst = None
 
 
     @classmethod
@@ -307,13 +308,13 @@ class MarkupBuilder(object):
             account = await account_stories_dal.getAccountBySessionName(session_name=account_name)
 
             account_username = account.session_file_path.split("/")[-1].replace(".session", "")
-            account_username.replace(".", "\\.")
+            account_username = account_username.replace("_", "\\_")
 
             target_channels = ""
             if account.target_channels is not None:
                 amount_of_target_channels = len(account.target_channels)
                 for x in account.target_channels:
-                    y = x.replace(".", "\\.") if "." in x else x
+                    y = x.replace("_", "\\_") if "." in x else x
                     if (account.target_channels.index(x) != amount_of_target_channels - 1):
                         target_channels += f"{y}\n"
                     else:
@@ -355,12 +356,12 @@ class MarkupBuilder(object):
             account = await account_stories_dal.getAccountBySessionName(session_name=account_name)
 
             account_username = account.session_file_path.split("/")[-1].replace(".session", "")
-            account_username.replace(".", "\\.")
+            account_username = account_username.replace("_", "\\_")
 
             accountStoriesActionsText = f"""
 Аккаунт: {account_username}
 Задержка в минутах: {account.delay}
-Статус: {account.aioscheduler_status}
+Статус: {"Активен" if account.aioscheduler_status else "Не активен"}
 """
 
             def split_string(input_string, max_length=4000):
@@ -577,20 +578,20 @@ class MarkupBuilder(object):
                 ],
                 [
                     types.InlineKeyboardButton(
-                        text="➕Добавить рекламный чат",
+                        text="➕Добавить канал для парсинга фолловеров",
                         callback_data=f"add_target_chat#{account_name}",
                     )
                 ],
                 [
                     types.InlineKeyboardButton(
-                        text="➖Убрать рекламный чат",
+                        text="➖Убрать канал для парсинга фолловеров",
                         callback_data=f"remove_target_chat#{account_name}",
                     )
                 ],
                 [
                     types.InlineKeyboardButton(
-                        text="🆙Изменить статус",
-                        callback_data=f"change_inst_status#{account_name}",
+                        text="🔛Изменить статус",
+                        callback_data=f"chng_inst_status#{account_name}",
                     )
                 ],
                 [
@@ -614,24 +615,35 @@ class MarkupBuilder(object):
     async def showAccountInstActions(cls, account_name):
         async with async_session() as session:
             account_inst_dal = AccountInstDAL(session)
-            account_inst_dal.getAccountBySessionName(session_name=account_name)
-            print(account_inst_dal)
-            account_username = account_inst_dal.session_file_path.split("/")[0].replace(".", "\\.")
-            target_chats = [
-                (target_chat.replace(".", "\\.") + "\n") for target_chat in account_inst_dal.target_channel
-            ]
-            account_message = account_inst_dal.message.replace(".", "\\.")
+            account = await account_inst_dal.getAccountBySessionName(session_name=account_name)
+            
+            account_username = account.session_file_path.split("/")[-1].replace(".cookies", "")
+            account_username = account_username.replace("_", "\\_")
+
+            target_channels = ""
+            if account.target_channels is not None and account.target_channels != []:
+                amount_of_target_channels = len(account.target_channels)
+                for x in account.target_channels:
+                    y = x.replace("_", "\\_") 
+                    if (account.target_channels.index(x) != amount_of_target_channels - 1):
+                        target_channels += f"{y}\n"
+                    else:
+                        target_channels += f"{y}"
+            else:
+                target_channels = "🤷‍♂️Нет каналов для рассылки"
+            account_message = account.message.replace("_", "\\_")
 
             accountInstActionsText = f"""
-Аккаунт: {account_username}
-🎯Целевой канал: {target_chats}
-🆙Статус: {"Активен" if account_inst_dal.status else "Не активен"}
+🤖Аккаунт: {account_username}
+🔛Статус: {"Активен" if account.status else "Не активен"}
+🎯Каналы для рассылки: 
+----------------------
+{target_channels}
+----------------------
 💬Рекламное сообщение:
--------------------
-
+----------------------
 {account_message}
 """
-            print(accountInstActionsText)
 
             def split_string(input_string, max_length=4000):
                 result = []
@@ -660,7 +672,7 @@ class MarkupBuilder(object):
                 mp.add(
                     types.InlineKeyboardButton(
                         text=account["session_name"],
-                        callback_data=f"edit_account_inst#{account['session_name']}",
+                        callback_data=f"edit_inst_account#{account['session_name']}",
                     )
                 )
 
@@ -675,31 +687,146 @@ class MarkupBuilder(object):
     @classmethod
     @property
     def instLoggingInSuccessfullyText(cls):
-        cls.instLoggingInSuccessfullyText = "✅Логин в аккаунт инстаграма произошел успешно"
+        cls.instLoggingInSuccessfullyText = "✅<b>Логин в аккаунт инстаграма произошел успешно</b>"
         return cls.instLoggingInSuccessfullyText
     
     @classmethod
     @property
     def errorInstLoggingIn(cls):
-        cls.errorInstLoggingIn = "❌Произошла ошибка при логине в аккаунт инстаграма, выйдите в меню логина и введите логин и пароль еще раз"
+        cls.errorInstLoggingIn = "❌<b>Произошла ошибка при логине в аккаунт инстаграма, выйдите в меню логина и введите логин и пароль еще раз</b>"
         return cls.errorInstLoggingIn
     
     @classmethod
     @property
-    def erorrIncorrectPasswordOrLogin(cls):
-        cls.erorrIncorrectPasswordOrLogin = "❌Вы ввели неверный пароль или логин, выйдите в меню логина и введите логин и пароль еще раз"
+    def errorIncorrectPasswordOrLogin(cls):
+        cls.erorrIncorrectPasswordOrLogin = "❌<b>Вы ввели неверный пароль или логин, выйдите в меню логина и введите логин и пароль еще раз</b>"
+        return cls.erorrIncorrectPasswordOrLogin
     
     @classmethod
     @property
+    def errorSuspendedAccount(cls):
+        cls.errorSuspendedAccount = "❌<b>Аккаунт, чьи логин и пароль вы ввели, забанен</b>"
+        return cls.errorSuspendedAccount
+
+
+    @classmethod
+    @property
     def getInstAccountLogin(cls):
-        cls.getInstAccountLogin = "Введите логин от вашего аккаунта инстаграм:"
+        cls.getInstAccountLogin = "<b>Введите логин от вашего аккаунта инстаграм:</b>"
         return cls.getInstAccountLogin
 
     @classmethod
     @property
     def getInstAccountPassword(cls):
-        cls.getInstAccountPassword = "Введите пароль от вашего аккаунта инстаграм:"
+        cls.getInstAccountPassword = "<b>Введите пароль от вашего аккаунта инстаграм:</b>"
         return cls.getInstAccountPassword
+    
+    @classmethod
+    @property
+    def sendUpdateMessageInstText(cls):
+        cls.sendUpdateMessageInstText = "✉️<b>Введите сообщение для рассылки другим пользователям инстаграм:</b>"
+        return cls.sendUpdateMessageInstText
+    
+    @classmethod
+    @property
+    def updatedMessageInstText(cls):
+        cls.updatedMessageInstText = "✅<b>Сообщение для рассылки было успешно изменено</b>"
+        return cls.updatedMessageInstText
+    
+    @classmethod
+    @property
+    def sendAddTargetChannelText(cls):
+        cls.sendAddTargetChannelText = "<b>Введите название канала для рассылки в виде username:</b>"
+        return cls.sendAddTargetChannelText
+
+    @classmethod
+    @property
+    def addedInstTargetChannel(cls):
+        cls.addedInstTargetChannel = "✅<b>Канал для рассылки был успешно добавлен в базу данных</b>"
+        return cls.addedInstTargetChannel
+    
+    @classmethod
+    @property
+    def errorTargetInstChat(cls):
+        cls.errorTargetInstChat = "❌<b>Вы ввели неправильное название канала (username), попробуйте еще раз или вернитесь в меню настройки сториз</b>"
+        return cls.errorTargetInstChat
+    
+    @classmethod
+    @property
+    def errorDbTargetInstChannel(cls):
+        cls.errorDbTargetInstChannel = "<b>❌Произошла ошибка при добавлении канала для рассылки в базу данных, попробуйте еще раз или вернитесь в меню настройки рассылки</b>"
+        return cls.errorDbTargetInstChannel
+    
+    @classmethod
+    @property
+    def errorDbNonExistentTargetInstChannel(cls):
+        cls.errorDbNonExistentTargetInstChannel = "<b>❌Вы пытаетесь удалить канал, который не существует в базе данных, попробуйте еще раз или вернитесь в меню настройки рассылки инстаграм</b>"
+        return cls.errorDbNonExistentTargetInstChannel
+
+    @classmethod
+    @property
+    def errorUpdatingInstMessage(cls):
+        cls.errorUpdatingInstMessage = "❌<b>Произошла ошибка при обновлении сообщения аккаунта инстаграм, аккаунт нет в базе данных</b>"
+        return cls.errorUpdatingInstMessage
+    
+    @classmethod
+    @property
+    def errorPageNotFound(cls):
+        cls.errorPageNotFound = "❌<b>Username пользователя, который вы ввели, является не валидным: нет такой страницы</b>"
+        return cls.errorPageNotFound
+
+    @classmethod
+    @property
+    def sendRemoveTargetChannelText(cls):
+        cls.sendRemoveTargetChannelText = "<b>Введите название канала для рассылки, который хотите удалить, в виде username:</b>"
+        return cls.sendRemoveTargetChannelText
+    
+    @classmethod
+    @property
+    def removedInstTargetChannel(cls):
+        cls.removedInstTargetChannel = "✅<b>Канал для рассылки был успешно удален из базы данных</b>"
+        return cls.removedInstTargetChannel
+    
+    @classmethod
+    @property
+    def errorTargetInstChannelRemoval(cls):
+        cls.errorTargetInstChannelRemoval = "❌</b>Вы ввели неправильное название канала для удаления (username), попробуйте еще раз или вернитесь в меню настройки сториз </b>"
+        return cls.errorTargetInstChannelRemoval
+
+    @classmethod
+    @property
+    def sendDeleteAccountInstText(cls):
+        cls.sendDeleteAccountInstText = "<b>Вы точно хотите удалить данный аккаунт? Введите ДА, ТОЧНО для подтверждения</b>"
+        return cls.sendDeleteAccountInstText
+    
+    @classmethod
+    @property
+    def deletedAccountInst(cls):
+        cls.deletedAccountInst = "✅<b>Аккаунт инстаграм был успешно удален из базы данных</b>"
+        return cls.deletedAccountInst
+
+    @classmethod
+    @property
+    def errorUnknownDeletionAccountCommand(cls):
+        cls.errorUnknownDeletionAccountCommand = "❌<b>Вы ввели неизвестную команду для удаления аккаунта. Введите ДА, ТОЧНО еще раз или вернитесь в меню рассылки</b>"
+        return cls.errorUnknownDeletionAccountCommand
+    
+    @classmethod
+    @property
+    def errorDbAccountInstRemoval(cls):
+        cls.errorUnknownDeletionAccountCommand = "❌<b>Аккаунт, который вы хотите удалить, не существует в базе данных, перейдите в меню рассылки</b>"
+        return cls.errorUnknownDeletionAccountCommand
+    
+    @classmethod
+    @property
+    def errorNoTargetInstChannels(cls):
+        cls.errorNoTargetInstChannels =  "<b>❌Нет таргетных каналов инстаграм, из которых можно спарсить подписчиков.\n Добавьте их с помощью \"➕Добавить канал для парсинга фолловеров\"</b>"
+        return cls.errorNoTargetInstChannels
+    
+    @classmethod
+    def changeStatusAccountInst(cls, status: bool):
+        cls._change_status_account_inst = f"<b>Статус аккаунта инстаграм для рассылки сообщений был изменен на: {status}</b>"
+        return cls._change_status_account_inst
 
     @classmethod
     @property
@@ -735,13 +862,13 @@ class MarkupBuilder(object):
         account_description = await account.getProfileBio(entity)
 
         if first_name:
-            first_name = first_name.replace('.', '\\.')
+            first_name = first_name.replace('_', '\\_')
         if last_name:
-            last_name = last_name.replace('.', '\\.')
+            last_name = last_name.replace('_', '\\_')
         if username:
-            username = username.replace('.', '\\.')
+            username = username.replace('_', '\\_')
         if account_description:
-            account_description = account_description.replace('.', '\\.')
+            account_description = account_description.replace('_', '\\_')
 
         visualConfigText = f"""
 🌄Визаульная конфигурация аккаунта сессии
@@ -938,6 +1065,19 @@ profile picture: {"" if isProfilePicture else "None"}
                 ]
             ],
         )
+    
+    @classmethod
+    def back_to_edit_inst_account(cls):
+        return types.InlineKeyboardMarkup(
+            row_width=1,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        text="🔙Назад", callback_data=f"back_to_edit_inst_account"
+                    )
+                ]
+            ],
+        )
 
     @classmethod
     def back_to_edit_menu(cls, account_name):
@@ -947,6 +1087,19 @@ profile picture: {"" if isProfilePicture else "None"}
                 [
                     types.InlineKeyboardButton(
                         text="🔙Назад", callback_data=f"back_to_edit_menu#{account_name}"
+                    )
+                ]
+            ],
+        )
+    
+    @classmethod
+    def back_to_inst_acc_edit(cls, account_name):
+        return types.InlineKeyboardMarkup(
+            row_width=1,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        text="🔙Назад", callback_data=f"back_to_inst_acc_edit#{account_name}"
                     )
                 ]
             ],
