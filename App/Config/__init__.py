@@ -9,6 +9,8 @@ inst_sessions_dirPath = os.path.join(basedir, "Parser", "sessions")
 pfp_file_path = "/Users/user/Spam-Tg-Inst-Service/me.jpg"
 logs_dirPath = f"{basedir}/Logger/logs"
 
+REDQUIRED_AMOUNT_OF_PROXIES = 2
+
 
 def singleton(cls):
     instances = {}
@@ -50,13 +52,17 @@ class AccountContext:
         self.account_name[chat_id] = account_name
 
 @singleton
-class LoginContext:
+class LoginPasswordContext:
     def __init__(self):
         self.login = {}
+        self.password = {}
 
     def updateLogin(self, chat_id: int, login: str):
         self.login[chat_id] = login
+    
+    def updatePassword(self, chat_id: int, password: str):
+        self.password[chat_id] = password
 
 message_context_manager = MessageContextManager()
 account_context = AccountContext()
-login_context = LoginContext()
+login_password_context = LoginPasswordContext()

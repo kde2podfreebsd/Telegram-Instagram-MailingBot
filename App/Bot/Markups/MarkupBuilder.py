@@ -8,10 +8,12 @@ from telebot import types
 from App.Database.DAL.AccountTgDAL import AccountDAL
 from App.Database.DAL.AccountStoriesDAL import AccountStoriesDAL
 from App.Database.DAL.AccountInstDAL import AccountInstDAL
+from App.Database.DAL.ProxyDAL import ProxyAddressDAL
 from App.Database.session import async_session
 
 from App.UserAgent.Core import UserAgentCore
 
+from App.Config import REDQUIRED_AMOUNT_OF_PROXIES
 
 class MarkupBuilder(object):
 
@@ -33,6 +35,7 @@ class MarkupBuilder(object):
     _error_username_floodWait = None
     _launch_stories_text = None
     _change_status_account_inst = None
+    _error_insufficient_amount_of_proxies = None
 
 
     @classmethod
@@ -578,6 +581,30 @@ class MarkupBuilder(object):
                 ],
                 [
                     types.InlineKeyboardButton(
+                        text="▶️Добавить ссылку на рилз",
+                        callback_data=f"add_reels_link#{account_name}",
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        text="⏰Изменить задержку между рассылками",
+                        callback_data=f"chng_inst_delay#{account_name}",
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        text="➕Добавить прокси",
+                        callback_data=f"add_proxy#{account_name}",
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
+                        text="➖Удалить прокси",
+                        callback_data=f"delete_proxy#{account_name}",
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
                         text="➕Добавить канал для парсинга фолловеров",
                         callback_data=f"add_target_chat#{account_name}",
                     )
@@ -631,17 +658,42 @@ class MarkupBuilder(object):
                         target_channels += f"{y}"
             else:
                 target_channels = "🤷‍♂️Нет каналов для рассылки"
+            proxy_dal = ProxyAddressDAL(session)
+            proxies = await proxy_dal.getProxyAddressById(
+                account_inst_id=account.id
+            )
+
+            proxies_string = ""
+            if proxies is not None and proxies != []:
+                amount_of_proxies = len(proxies)
+                for proxy in proxies:
+                    _proxy = proxy.replace("_", "\\_")
+                    if (proxies.index(proxy) != amount_of_proxies - 1):
+                        proxies_string += f"{_proxy}\n"
+                    else:
+                        proxies_string += f"{_proxy}"
+            else:
+                proxies_string = "🤷‍♂️Нет прокси адресов"
+
             account_message = account.message.replace("_", "\\_")
+            reels_link = account.reels_link.replace("_", "\\_")
 
             accountInstActionsText = f"""
 🤖Аккаунт: {account_username}
 🔛Статус: {"Активен" if account.status else "Не активен"}
+⏰Задержка в минутах: {account.delay}
+💾Прокси:
+------------------------
+{proxies_string}
+------------------------
 🎯Каналы для рассылки: 
-----------------------
+------------------------
 {target_channels}
-----------------------
+------------------------
+🔗Ссылка на рилз:
+{reels_link}
 💬Рекламное сообщение:
-----------------------
+------------------------
 {account_message}
 """
 
@@ -692,6 +744,12 @@ class MarkupBuilder(object):
     
     @classmethod
     @property
+    def loggingIn(cls):
+        cls.loggingIn = "<i>Происходит логин в аккаунт инстаграм, ожидайте...</i>"
+        return cls.loggingIn
+    
+    @classmethod
+    @property
     def errorInstLoggingIn(cls):
         cls.errorInstLoggingIn = "❌<b>Произошла ошибка при логине в аккаунт инстаграма, выйдите в меню логина и введите логин и пароль еще раз</b>"
         return cls.errorInstLoggingIn
@@ -721,6 +779,19 @@ class MarkupBuilder(object):
         cls.getInstAccountPassword = "<b>Введите пароль от вашего аккаунта инстаграм:</b>"
         return cls.getInstAccountPassword
     
+    @classmethod 
+    @property 
+    def getProxyAddress(cls):
+        cls.getProxyAddress = "<b>Введите адрес прокси сервера по образцу: IP_ADDRESS:PORT:LOGIN:PASSWORD</b>"
+        return cls.getProxyAddress 
+    
+    @classmethod 
+    @property 
+    def errorGetProxyAddress(cls):
+        cls.errorGetProxyAddress = "❌<b>Введенный прокси адрес не подходит по образцу: IP_ADDRESS:PORT:LOGIN:PASSWORD.\n Перейдите в меню рассылки инстаграма или введите прокси еще раз</b>"
+        return cls.errorGetProxyAddress 
+    
+    
     @classmethod
     @property
     def sendUpdateMessageInstText(cls):
@@ -738,6 +809,12 @@ class MarkupBuilder(object):
     def sendAddTargetChannelText(cls):
         cls.sendAddTargetChannelText = "<b>Введите название канала для рассылки в виде username:</b>"
         return cls.sendAddTargetChannelText
+    
+    @classmethod
+    @property
+    def parsingFollowers(cls):
+        cls.parsingFollowers = "<i>Происходит парсинг фолловеров канала инстаграм, ожидайте...</i>"
+        return cls.parsingFollowers
 
     @classmethod
     @property
@@ -824,9 +901,118 @@ class MarkupBuilder(object):
         return cls.errorNoTargetInstChannels
     
     @classmethod
+    @property
+    def errorNoMessage(cls):
+        cls.errorNoTargetInstChannels =  "<b>❌Нет сообщения для рассылки. Добавьте его с помощью \"💬Изменить сообщение\"</b>"
+        return cls.errorNoTargetInstChannels
+    
+    @classmethod
+    def errorInsufficientAmountOfProxies(cls, amount_of_proxies: int):
+        cls._error_insufficient_amount_of_proxies = f"""<b>❌Необходимо иметь следующее количество прокси для спам-рассылки: {REDQUIRED_AMOUNT_OF_PROXIES}.
+        \nСейчас {amount_of_proxies}/{REDQUIRED_AMOUNT_OF_PROXIES}, добавьте еще с помощью \"💾Добавить прокси\"</b>"""
+        return cls._error_insufficient_amount_of_proxies
+    
+    @classmethod
+    @property
+    def errorInsufficientAmountOfProxiesForParsing(cls):
+        cls.errorInsufficientAmountOfProxiesForParsing = "<b>❌Невозможно спарсить подписчиков из канала без прокси. Добавьте один адрес с помощью \"💾Добавить прокси\"</b>"
+        return cls.errorInsufficientAmountOfProxiesForParsing
+    
+    @classmethod
     def changeStatusAccountInst(cls, status: bool):
         cls._change_status_account_inst = f"<b>Статус аккаунта инстаграм для рассылки сообщений был изменен на: {status}</b>"
         return cls._change_status_account_inst
+    
+    @classmethod
+    @property
+    def addProxyText(cls):
+        cls.addProxyText = "<b>Введите адрес прокси сервера по образцу: IP_ADDRESS:PORT:LOGIN:PASSWORD</b>"
+        return cls.addProxyText
+    
+    @classmethod
+    @property
+    def addedProxyText(cls):
+        cls.addedProxyText = "✅<b>Адрес прокси был успешно добавлен в базу данных</b>"
+        return cls.addedProxyText
+    
+    @classmethod
+    @property
+    def errorProxyAddress(cls):
+        cls.errorProxyAddress = "❌<b>Произошла ошибка при добавлении прокси адреса в базу данных</b>"
+        return cls.errorProxyAddress
+    
+    @classmethod
+    @property
+    def errorProxyAddressRemoval(cls):
+        cls.errorProxyAddressRemoval = "❌<b>Произошла ошибка при удалении прокси адреса из базы данных</b>"
+        return cls.errorProxyAddressRemoval
+
+    @classmethod
+    @property
+    def errorInvalidProxyAdress(cls):
+        cls.errorInvalidProxyAdress = "❌<b>Введенный прокси адрес не подходит по образцу: IP_ADDRESS:PORT:LOGIN:PASSWORD.\n Перейдите в меню рассылки инстаграма или введите прокси еще раз</b>"
+        return cls.errorInvalidProxyAdress
+    
+    @classmethod
+    @property
+    def deleteProxyAddress(cls):
+        cls.deleteProxyAddress = "<b>Введите адрес прокси сервера для удаления из базы данных по образцу: IP_ADDRESS:PORT:LOGIN:PASSWORD</b>"
+        return cls.deleteProxyAddress
+    
+    @classmethod
+    @property
+    def deletedProxyAddress(cls):
+        cls.deleteProxyAddress = "✅<b>Адрес прокси был успешно удален из базы данных</b>"
+        return cls.deleteProxyAddress
+
+    @classmethod
+    @property
+    def setDelayForInstText(cls):
+        cls.setDelayForInstText = "<b>Введите задержку для автоматической рассылки инстаграм в минутах:</b>"
+        return cls.setDelayForInstText
+
+    @classmethod
+    @property
+    def errorNotIntegerInstDelay(cls):
+        cls.errorNotIntegerInstDelay = "❌<b>Задержка является натуральным числом, введите её заново или перейдите в меню рассылки инстаграм</b>"
+        return cls.errorNotIntegerInstDelay
+
+    @classmethod
+    @property
+    def delayForInstBeenSetText(cls):
+        cls.delayForInstBeenSetText = "<b>✅Новая задержка для автоматической спам рассылки инстаграм была установлена</b>"
+        return cls.delayForInstBeenSetText
+
+    @classmethod
+    @property
+    def updateReelsLinkText(cls):
+        cls.updateReelsLinkText = "<b>Введите ссылку для рилза, которая будет использоваться в рассылке:</b>"
+        return cls.updateReelsLinkText
+
+    @classmethod
+    @property
+    def updatedReelsLinkText(cls):
+        cls.updatedReelsLinkText = "✅<b>Ссылка на рилз была успешно сохранена в базу данных</b>"
+        return cls.updatedReelsLinkText
+    
+    @classmethod
+    @property
+    def errorReelsLink(cls):
+        cls.updatedReelsLinkText = "❌<b>Произошла ошибка при добавлении ссылки на рилз в базу данных</b>"
+        return cls.updatedReelsLinkText
+
+    @classmethod
+    @property
+    def errorInvalidReelsLink(cls):
+        cls.errorInvalidReelsLink = "❌<b>Введенная ссылка не соотвествует ссылке на рилз: паттерн \"https://www\.instagram\.com/reel/[\w\d_-]+/\?utm_source=ig_web_copy_link\"</b>"
+        return cls.errorInvalidReelsLink
+
+    @classmethod
+    @property
+    def errorDelayInst(cls):
+        cls.errorDelayInst = "❌<b>Произошла ошибка при добавлении задержки для рассылки инстаграма в базу данных</b>"
+        return cls.errorDelayInst
+
 
     @classmethod
     @property
@@ -1067,13 +1253,39 @@ profile picture: {"" if isProfilePicture else "None"}
         )
     
     @classmethod
-    def back_to_edit_inst_account(cls):
+    def back_to_get_password(cls):
         return types.InlineKeyboardMarkup(
             row_width=1,
             keyboard=[
                 [
                     types.InlineKeyboardButton(
-                        text="🔙Назад", callback_data=f"back_to_edit_inst_account"
+                        text="🔙Назад", callback_data="back_to_get_password"
+                    )
+                ]
+            ],
+        )
+
+    @classmethod 
+    def back_to_get_proxy(cls):
+        return types.InlineKeyboardMarkup(
+            row_width=1,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        text="🔙Назад", callback_data="back_to_get_proxy"
+                    )
+                ]
+            ],
+        )
+
+    @classmethod
+    def back_to_edit_inst_account(cls, account_name):
+        return types.InlineKeyboardMarkup(
+            row_width=1,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        text="🔙Назад", callback_data=f"back_to_edit_inst_account#{account_name}"
                     )
                 ]
             ],
@@ -1093,13 +1305,14 @@ profile picture: {"" if isProfilePicture else "None"}
         )
     
     @classmethod
-    def back_to_inst_acc_edit(cls, account_name):
+    @property
+    def back_to_inst_acc_edit(cls):
         return types.InlineKeyboardMarkup(
             row_width=1,
             keyboard=[
                 [
                     types.InlineKeyboardButton(
-                        text="🔙Назад", callback_data=f"back_to_inst_acc_edit#{account_name}"
+                        text="🔙Назад", callback_data=f"back_to_inst_acc_edit"
                     )
                 ]
             ],

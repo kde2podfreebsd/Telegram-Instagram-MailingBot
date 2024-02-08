@@ -38,13 +38,14 @@ class InstagramParser(Parser):
     def __init__(
             self, 
             login: str,
-            password: str
+            password: str,
+            proxy: str
         ):
         super().__init__()
         self.login = login
         self.password = password
 
-        ip, port, login, password = os.getenv("PROXY_ADDRESS").split(":")
+        ip, port, login, password = proxy.split(":")
         proxy_extension = ProxyExtension(ip, int(port), login, password)
         options = uc.ChromeOptions()
         options.add_argument(f"--load-extension={proxy_extension.directory}")
@@ -98,6 +99,7 @@ class InstagramParser(Parser):
         return result
         
     def parse_followers(self, channel: str):
+        instagramParserExceptions = InstagramParserExceptions()
         try:
             wait = WebDriverWait(self.driver, 15)
 
@@ -114,7 +116,7 @@ class InstagramParser(Parser):
                 pass
             else:
                 logger.log_error(f"User with channel name {channel} has not been found, such page does not exist")
-                raise InstagramParserExceptions.PageNotFound
+                raise instagramParserExceptions.PageNotFound
             
             followers_count = int(wait.until(EC.presence_of_element_located((By.XPATH, FOLLOWER_COUNT_XPATH))).text.replace(',', ''))
 
@@ -151,12 +153,12 @@ class InstagramParser(Parser):
         return result
 
     def send_message(self, message, channel):
+        instagramParserExceptions = InstagramParserExceptions()
         try:
             wait = WebDriverWait(self.driver, 15)
 
             self.driver.get(url="https://instagram.com/")
-            wait.until(EC.element_to_be_clickable((By.XPATH, COOKIES_AGREEMENT_XPATH))).click()
-            
+            # wait.until(EC.element_to_be_clickable((By.XPATH, COOKIES_AGREEMENT_XPATH))).click()
             self.load_cookies()
 
             self.driver.get(url=f"https://instagram.com/{channel}/")
@@ -166,21 +168,25 @@ class InstagramParser(Parser):
                 pass
             else:
                 logger.log_error(f"User with channel name {channel} has not been found, such page does not exist")
-                raise InstagramParserExceptions.PageNotFound
+                raise None
             try:
-                wait.until(EC.element_to_be_clickable((By.XPATH, MESSAGE_BUTTON_XPATH))).click()
+                wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, MESSAGE_BUTTON_XPATH))).click()
             except Exception as e:
-                pass
-            else:
                 logger.log_error(f"Message cannot be sent to user with channel name {channel}, as they prhobited messaging them")
-                raise InstagramParserExceptions.PageNotFound
+                return None
+                
             wait.until(EC.element_to_be_clickable((By.XPATH, TURN_ON_NOTIFICATIONS_BUTTON_XPATH))).click()
             send_message_field = wait.until(EC.presence_of_element_located((By.XPATH, SEND_MESSAGE_FIELD_XPATH)))
             send_message_field.send_keys(message)
             send_message_field.send_keys(Keys.ENTER)
+            time.sleep(5)
 
         except Exception as e:
-            return e
+            logger.log_error(f"An exception occured in send_message: {e}")
+            return None
+        finally:
+            self.close_parser()
+        
 
     def dump_cookies(self):
         try:
@@ -197,6 +203,10 @@ class InstagramParser(Parser):
         except Exception as e:
             return e
     
+    def check_ip(self):
+        self.driver.get("https://whoer.net/ru")
+        time.sleep(10)
+    
 # selenium.common.exceptions.ElementClickInterceptedException
 
 # i.logging_in()
@@ -209,14 +219,15 @@ class InstagramParser(Parser):
 
 async def main():
     i = InstagramParser(
-        login="",
-        password=""
+        login="ivanov.stuff@mail.ru",
+        password="",
+        proxy='45.133.220.83:8000:W7xcL4:U348xM'
     )
     # result = await i.async_logging_in()
     # result = await i.async_parse_follower(
     #     channel="dlgkdlkhjldkhkdl"
     # )
-    result = await i.async_send_message(message=":)", channel="don_tsolakini")
+    result = await i.async_send_message(message=":)", channel="leomessi")
     print(result)
 
 if __name__ == "__main__":

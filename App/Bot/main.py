@@ -50,20 +50,29 @@ from App.Bot.Handlers.EditAccountInstActionsHandler import _sendRemoveTargetChan
 from App.Bot.Handlers.EditAccountInstActionsHandler import _sendDeleteAccountInstText
 from App.Bot.Handlers.EditAccountInstActionsHandler import _changeStatusAccountInst
 from App.Bot.Handlers.EditAccountInstActionsHandler import _errorNoTargetInstChannels
+from App.Bot.Handlers.EditAccountInstActionsHandler import _sendAddProxyText
+from App.Bot.Handlers.EditAccountInstActionsHandler import _setDelayForInstText
+from App.Bot.Handlers.EditAccountInstActionsHandler import _updateReelsLinkText
+from App.Bot.Handlers.EditAccountInstActionsHandler import _errorInsufficientAmountOfProxies
+from App.Bot.Handlers.EditAccountInstActionsHandler import _sendDeleteProxyText
 
 from App.Bot.Handlers.NewAccountHandler import _newAccountMenu
 from App.Bot.Handlers.NewAccountInstHandler import _getInstAccountLogin
+from App.Bot.Handlers.NewAccountInstHandler import _getInstAccountPassword
+from App.Bot.Handlers.NewAccountInstHandler import _getProxyAddress
 
 from App.Bot.Markups import MarkupBuilder  # noqa
 from App.Bot.Middlewares import FloodingMiddleware
 from App.Config import account_context
 from App.Config import bot
 from App.Config import message_context_manager
+from App.Config import REDQUIRED_AMOUNT_OF_PROXIES
 from App.Config import singleton
 from App.Database.DAL.AccountTgDAL import AccountDAL
 from App.Database.DAL.AccountStoriesDAL import AccountStoriesDAL
 from App.Database.session import async_session
 from App.Database.DAL.AccountInstDAL import AccountInstDAL
+from App.Database.DAL.ProxyDAL import ProxyAddressDAL
 
 
 
@@ -408,10 +417,31 @@ class Bot:
             await _spamInst(message=call.message)
 
         if call.data == "logging_in_inst" or call.data == "back_to_logging_in_inst":
+            await bot.delete_state(
+                user_id=call.message.chat.id, chat_id=call.message.chat.id
+            )
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=call.message.chat.id
             )
             await _getInstAccountLogin(message=call.message)
+        
+        if call.data == "back_to_get_password":
+            await bot.delete_state(
+                user_id=call.message.chat.id, chat_id=call.message.chat.id
+            )
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            await _getInstAccountPassword(message=call.message)
+        
+        if call.data == "back_to_get_proxy":
+            await bot.delete_state(
+                user_id=call.message.chat.id, chat_id=call.message.chat.id
+            )
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            await _getProxyAddress(message=call.message)
         
         if call.data == "inst_acc_edit" or call.data == "back_to_inst_acc_edit":
             await message_context_manager.delete_msgId_from_help_menu_dict(
@@ -488,10 +518,17 @@ class Bot:
             )
             async with async_session() as session:
                 account_inst_dal = AccountInstDAL(session)
+                proxy_dal = ProxyAddressDAL(session)
                 account = await account_inst_dal.getAccountBySessionName(
                     session_name=account_name
                 )
-                if (account.target_channels == None):
+                proxies = await proxy_dal.getProxyAddressById(
+                    account_inst_id=account.id
+                )
+                amount_of_proxies = len(proxies)
+                if (amount_of_proxies < REDQUIRED_AMOUNT_OF_PROXIES):
+                    await _errorInsufficientAmountOfProxies(call.message, amount_of_proxies)
+                elif (account.target_channels == None):
                     await _errorNoTargetInstChannels(call.message)
                 elif (len(account.target_channels) == 0):
                     await _errorNoTargetInstChannels(call.message)
@@ -502,6 +539,52 @@ class Bot:
                         new_status=new_status
                     )
                     await _changeStatusAccountInst(message=call.message, status=new_status)
+        
+        if "add_proxy" in call.data:
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+
+            await _sendAddProxyText(message=call.message)
+        
+        if "delete_proxy" in call.data:
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+
+            await _sendDeleteProxyText(message=call.message)
+        
+        if "chng_inst_delay" in call.data:
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+  
+            await _setDelayForInstText(message=call.message)
+        
+        if "add_reels_link" in call.data:
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+  
+            await _updateReelsLinkText(message=call.message)
+        
+
         
 
             

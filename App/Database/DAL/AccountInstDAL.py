@@ -9,6 +9,7 @@ from App.Config import inst_sessions_dirPath
 from App.Database.Models.Models import AccountInst, Follower
 from App.Logger import ApplicationLogger
 from App.Database.DAL.FollowerDAL import FollowerDAL
+from App.Database.DAL.ProxyDAL import ProxyAddressDAL
 from App.Parser.InstagramParser import InstagramParser
 
 logger = ApplicationLogger()
@@ -69,10 +70,14 @@ class AccountInstDAL:
         )
         async with async_session() as session:
             follower_dal = FollowerDAL(session)
-
+            proxy_dal = ProxyAddressDAL(session)
+            proxies = await proxy_dal.getProxyAddressById(
+                account_inst_id=account.id
+            )
             instagramParser = InstagramParser(
                 login=session_name,
-                password="null"
+                password="null",
+                proxy=proxies[0]
             )
 
             if (account):
@@ -160,6 +165,17 @@ class AccountInstDAL:
                         session_name=session_name, 
                         target_channel=target_channel
                     )
+
+            async with async_session() as session:
+                proxy_dal = ProxyAddressDAL(session)
+                proxies = await proxy_dal.getProxyAddressById(account_inst_id=account_inst.id)
+                if proxies:
+                    for proxy in proxies:
+                        proxy_dal.deleteProxyAddress(
+                            address=proxy,
+                            account_inst_id=account_inst.id
+                        )
+
             await self.db_session.delete(account_inst)
             await self.db_session.flush()
 
@@ -179,8 +195,36 @@ class AccountInstDAL:
             account.status = new_status
             await self.db_session.commit()
             logger.log_info(f"AccountInst {session_name}'s status has been changed to {new_status}")
+            return True
         else:
             logger.log_error(f"AccountInst {session_name} does not exist in data base")
+            return False
+    
+    async def updateDelay(self, session_name, new_delay):
+        account = await self.getAccountBySessionName(
+            session_name=session_name
+        )
+        if account:
+            account.delay = new_delay
+            await self.db_session.commit()
+            logger.log_info(f"AccountInst {session_name}'s delay has been changed to {new_delay}")
+            return True
+        else:
+            logger.log_error(f"AccountInst {session_name} does not exist in data base")
+            return False
+    
+    async def updateReelsLink(self, session_name, new_reels_link):
+        account = await self.getAccountBySessionName(
+            session_name=session_name
+        )
+        if account:
+            account.reels_link = new_reels_link
+            await self.db_session.commit()
+            logger.log_info(f"AccountInst {session_name}'s reels link has been changed to {new_reels_link}")
+            return True
+        else:
+            logger.log_error(f"AccountInst {session_name} does not exist in data base")
+            return False
     
     async def getSessionNamesWithTrueStatus(self):
         result = await self.db_session.execute(

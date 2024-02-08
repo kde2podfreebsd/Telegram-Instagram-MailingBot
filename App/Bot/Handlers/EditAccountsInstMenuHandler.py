@@ -29,9 +29,7 @@ async def _editAccountsInstMenu(message):
 
 
 async def _showAccountInstActions(message, account_name):
-
     msg_list = await MarkupBuilder.showAccountInstActions(account_name=account_name)
-
     for x in range(len(msg_list)):
         if x + 1 == len(msg_list):
             msg = await bot.send_message(

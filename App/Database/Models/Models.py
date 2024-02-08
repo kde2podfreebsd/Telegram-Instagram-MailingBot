@@ -45,9 +45,12 @@ class AccountInst(Base):
     session_file_path = Column(String, nullable=False)
     target_channels = Column(MutableList.as_mutable(ARRAY(String)), nullable=True)
     message = Column(String, nullable=True, default="Не указано")
+    reels_link = Column(String, nullable=True, default="Не указана")
     status = Column(Boolean, nullable=False, default=False)
+    delay = Column(Integer, nullable=False, default=15)
     
     followers = relationship("Follower", back_populates="account_inst")
+    proxy = relationship("ProxyAddress", back_populates="account_inst")
 
 class Follower(Base):
     __tablename__ = "followers"
@@ -59,3 +62,11 @@ class Follower(Base):
 
     account_inst = relationship("AccountInst", back_populates="followers")
 
+class ProxyAddress(Base):
+    __tablename__ = "proxy"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    address = Column(String, nullable=False)
+    account_inst_id = Column(Integer, ForeignKey('accounts_inst.id'))
+
+    account_inst = relationship("AccountInst", back_populates="proxy")
