@@ -26,7 +26,7 @@ async def get_members_from_tg(session_name, usernames, limit=None):
 
 
 if __name__ == "__main__":
-    db = asyncio.run(get_members_from_tg("test", ["MafiaSchool21"]))
+    db = asyncio.run(get_members_from_tg("test", ["dope"]))
     print(db)
 
 

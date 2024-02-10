@@ -17,23 +17,40 @@ class AccountTg(Base):
     advertising_channels = Column(MutableList.as_mutable(ARRAY(String)), nullable=True)
     status = Column(Boolean, nullable=False, default=False)
 
-class TargetChannel(Base):
-    __tablename__ = "target_channels"
+class AccountStories(Base):
+    __tablename__ = "accounts_stories"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_file_path = Column(String, nullable=False)
+    target_channels = Column(MutableList.as_mutable(ARRAY(String)), nullable=True)
+    aioscheduler_status = Column(Boolean, nullable=False, default=False)
+    delay = Column(Integer, nullable=False, default=15)
+ 
+    premium_chat_member = relationship("PremiumChatMember", back_populates="account_stories")
+
+class PremiumChatMember(Base):
+    __tablename__ = "premium_chat_members"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String, nullable=False)
-    premium_members = Column(MutableList.as_mutable(ARRAY(String)), nullable=True) 
+    account_stories_id = Column(Integer, ForeignKey('accounts_stories.id'))
+    target_channel = Column(String, nullable=False)
+
+    account_stories = relationship("AccountStories", back_populates="premium_chat_member")
 
 class AccountInst(Base):
     __tablename__ = "accounts_inst"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     session_file_path = Column(String, nullable=False)
-    target_channel = Column(String, nullable=True, default="Не указан")
+    target_channels = Column(MutableList.as_mutable(ARRAY(String)), nullable=True)
     message = Column(String, nullable=True, default="Не указано")
+    reels_link = Column(String, nullable=True, default="Не указана")
     status = Column(Boolean, nullable=False, default=False)
+    delay = Column(Integer, nullable=False, default=15)
     
     followers = relationship("Follower", back_populates="account_inst")
+    proxy = relationship("ProxyAddress", back_populates="account_inst")
 
 class Follower(Base):
     __tablename__ = "followers"
@@ -41,6 +58,15 @@ class Follower(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String, nullable=False)
     account_inst_id = Column(Integer, ForeignKey('accounts_inst.id'))
+    target_channel = Column(String, nullable=False)
 
     account_inst = relationship("AccountInst", back_populates="followers")
 
+class ProxyAddress(Base):
+    __tablename__ = "proxy"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    address = Column(String, nullable=False)
+    account_inst_id = Column(Integer, ForeignKey('accounts_inst.id'))
+
+    account_inst = relationship("AccountInst", back_populates="proxy")

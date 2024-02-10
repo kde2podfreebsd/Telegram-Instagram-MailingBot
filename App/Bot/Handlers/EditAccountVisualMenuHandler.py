@@ -8,7 +8,6 @@ import os
 
 async def _visualConfig(account_name, message):
     account = UserAgentCore(account_name)
-
     avatar_link = await account.downloadProfilePhoto()
     isProfilePicture = (True if avatar_link.split("/")[-1] != "None" else False)
 

@@ -1,11 +1,15 @@
 import asyncio
 import uvloop
 import os 
+import sys
+import io
+import subprocess
 
 from telethon import TelegramClient
 import telethon.tl.functions
 from telethon.tl.functions.users import GetFullUserRequest
 from telethon.tl.functions.account import UpdateProfileRequest
+from telethon.errors.rpcerrorlist import PhoneNumberInvalidError
 from telethon import functions
 from telethon import types
 
@@ -20,7 +24,7 @@ class UserAgentCore:
     def __init__(self, session_name: str):
         self.session_name = session_name
         self.app = TelegramClient(f"{sessions_dirPath}/{session_name}", api_id=123, api_hash="123")
-        
+
         logger.log_info(
             f"Init UserAgentCore on {session_name} session. Path to session {sessions_dirPath}/{session_name}"
         )
@@ -168,9 +172,11 @@ class UserAgentCore:
             max_ids = await app(functions.stories.GetPeerMaxIDsRequest(
                 id=usernames
             ))
+            stories_watched = 0
             # print([(i, j) for i, j in zip(max_ids, usernames)])
             for username, max_id in zip(usernames, max_ids):
                 if (max_id != 0):
+                    stories_watched += 1
                     # print(username, max_id)
                     await app(functions.stories.ReadStoriesRequest(
                         peer=username,
@@ -185,35 +191,33 @@ class UserAgentCore:
                         add_to_recent=True
                     ))
                     logger.log_info(f"Reaction has been given to @{username}")
+            return stories_watched
+
+    async def isUserAuthorized(self):
+        await self.app.connect()
+        result = await self.app.is_user_authorized()
+        await self.app.disconnect()
+        
+        logger.log_info(
+            f"Session {self.session_name} has been authorized successfully"
+        ) if result else logger.log_warning(
+            f"Session {self.session_name} has not been authorized successfully, it is either banned or not initialized"
+        )
+        return result 
+    
+    async def numberOfActiveStories(self, usernames):
+        async with self.app as app:
+            max_ids = await app(functions.stories.GetPeerMaxIDsRequest(
+                id=usernames
+            ))
+            return len([number for number in max_ids if number != 0])
 
 async def main():
     x = UserAgentCore("test")
-    e = await x.getMe()
-    r1 = await x.getProfileBio(e)
-    r2 = await x.getProfilePictures(e)
-    print(r1, r2)
+    
 
 
 if __name__ == "__main__":
     uvloop.install()
-
-    # asyncio.run(UserAgentCore.createSession(
-    #     session_name="abc",
-    #     api_id=123,
-    #     api_hash=""
-    # ))
-   
     asyncio.run(main())
 
-
-
-#----------unnecessary-------------
-    # u = UserAgentCore("rhdv")
-    # u1 = UserAgentCore("complicat9d")
-    # asyncio.run(u1.sendMsg(chat="@complicat9d", message="test1", parseMode=pyrogram.enums.ParseMode.MARKDOWN))
-    # asyncio.run(
-    #     u1.sendMsg(chat="@bubblesortdudoser", message="test1", parseMode=pyrogram.enums.ParseMode.MARKDOWN))
-    
-    # asyncio.run(u.joinChat("@publicgrouptesttest"))
-    # asyncio.run(u.leaveChat("@publicgrouptesttest"))
-    # asyncio.run(u.getMe())

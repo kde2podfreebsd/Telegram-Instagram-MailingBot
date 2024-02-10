@@ -48,7 +48,6 @@ async def mainLayer():
                 account = await account_dal.getAccountBySessionName(client.session_name)
                 if account and account.advertising_channels:
                     for chats in account.advertising_channels:
-                        # Получение последнего ID сообщения и очистка его
                         last_message_id = message_tracker.get_last_message_id(client.session_name, chats)
                         if last_message_id:
                             await client.deleteMsg(chat=chats, message_ids=last_message_id)
