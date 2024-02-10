@@ -1,3 +1,7 @@
+#-------------------checking proxy-------------------
+IP_XPATH = "/html/body/div/div/div/section[1]/div/div/div/div[1]/div/strong"
+#----------------------------------------------------
+
 #-----------------account logging in-----------------
 COOKIES_AGREEMENT_XPATH = "//button[@class=\"_a9-- _ap36 _a9_1\"]"
 LOGIN_INPUT_XPATH = "//*[@id=\"loginForm\"]/div/div[1]/div/label/input"
@@ -22,7 +26,6 @@ TURN_ON_NOTIFICATIONS_BUTTON_XPATH = "//button[@class=\"_a9-- _ap36 _a9_1\"]"
 SEND_MESSAGE_FIELD_XPATH = "/html/body/div[2]/div/div/div[2]/div/div/div[1]/div[1]/div[2]/section/div/div/div/div[1]/div/div[2]/div/div/div/div/div/div/div[2]/div/div/div[2]/div/div/div[2]/div/div[1]"
 #----------------------------------------------------
 
-#по XPATH нельяза искать:
-#/html/body/div[2]/div/div/div[2]/div/div/div[1]/div[1]/div[2]/div[2]/section/main/div/header/section/div[1]/div[1]/div/div[2]
-#"/html/body/div[2]/div/div/div[2]/div/div/div[1]/div[1]/div[2]/div[2]/section/main/div/header/section/div[1]/div[2]/div/div[2]"
-#/html/body/div[2]/div/div/div[2]/div/div/div[1]/div[1]/div[2]/div[2]/section/main/div/header/section/div[1]
+#---------------------send reels---------------------
+SEND_REELS_BUTTON_XPATH = "//button[@class=\"_abl-\"]"  
+#----------------------------------------------------

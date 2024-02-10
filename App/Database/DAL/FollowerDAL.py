@@ -15,14 +15,21 @@ class FollowerDAL:
 
     async def createFollower(self, username, account_inst_id, target_channel):
         try:
-            premium_chat_member = Follower(
+            existing_account = await self.getFollower(
+                username=username, 
+                account_inst_id=account_inst_id
+            )
+            if existing_account:
+                logger.log_error(f"Follower with username {username} has already been added to data base")
+                return None
+            follower = Follower(
                 username=username, 
                 account_inst_id=account_inst_id,
                 target_channel=target_channel
             )
-            self.db_session.add(premium_chat_member)
+            self.db_session.add(follower)
             await self.db_session.flush()
-            return premium_chat_member
+            return follower
         except IntegrityError:
             await self.db_session.rollback()
             logger.log_warning("IntegrityError, db rollback")

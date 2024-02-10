@@ -16,12 +16,9 @@ from App.Parser.ProxyExtension import ProxyExtension
 import ssl
 import pickle 
 import time
-import os
 import asyncio
 import functools
 
-from dotenv import load_dotenv
-load_dotenv()
 logger = ApplicationLogger()
 
 ssl._create_default_https_context = ssl._create_unverified_context
@@ -44,6 +41,7 @@ class InstagramParser(Parser):
         super().__init__()
         self.login = login
         self.password = password
+        self.proxy = proxy
 
         ip, port, login, password = proxy.split(":")
         proxy_extension = ProxyExtension(ip, int(port), login, password)
@@ -51,6 +49,29 @@ class InstagramParser(Parser):
         options.add_argument(f"--load-extension={proxy_extension.directory}")
         self.driver = uc.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
         logger.log_info(f"InstagramParser initialization on {self.login}'s account")
+
+    async def async_check_proxy(self):
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(None, self.check_proxy)
+        return result
+
+    def check_proxy(self):
+        try:   
+            self.driver.get("https://whoer.net/ru")
+            wait = WebDriverWait(self.driver, 15)
+            ip = wait.until(EC.presence_of_element_located((By.XPATH, IP_XPATH))).text
+            proxy_ip = self.proxy.split(":")[0]
+            if (ip == proxy_ip): 
+                logger.log_info(f"Proxy with proxy_ip {proxy_ip} is valid")
+                return True
+            else:
+                logger.log_error(f"Proxy with proxy_ip {proxy_ip} is invalid")
+                return False
+        except Exception as e:
+            logger.log_error(f"An error occured while checking proxy address: {e}")
+            return e
+        finally:
+            self.close_parser()
 
     async def async_logging_in(self):
         loop = asyncio.get_event_loop()
@@ -92,7 +113,7 @@ class InstagramParser(Parser):
             self.close_parser()
 
     
-    async def async_parse_follower(self, channel):
+    async def async_parse_follower(self, channel: str):
         loop = asyncio.get_event_loop()
         partial_parse_followers = functools.partial(self.parse_followers, channel)
         result = await loop.run_in_executor(None, partial_parse_followers)
@@ -104,8 +125,6 @@ class InstagramParser(Parser):
             wait = WebDriverWait(self.driver, 15)
 
             self.driver.get(url="https://instagram.com/")
-            wait.until(EC.element_to_be_clickable((By.XPATH, COOKIES_AGREEMENT_XPATH))).click()
-            
             self.load_cookies()
 
             self.driver.get(url=f"https://instagram.com/{channel}/")
@@ -146,19 +165,18 @@ class InstagramParser(Parser):
             time.sleep(2)  
             curr_followers_count += step
 
-    async def async_send_message(self, message, channel):
+    async def async_send_message(self, message: str, channel: str):
         loop = asyncio.get_event_loop()
         partial_send_message = functools.partial(self.send_message, message, channel)
         result = await loop.run_in_executor(None, partial_send_message)
         return result
 
-    def send_message(self, message, channel):
+    def send_message(self, message: str, channel: str):
         instagramParserExceptions = InstagramParserExceptions()
         try:
             wait = WebDriverWait(self.driver, 15)
 
             self.driver.get(url="https://instagram.com/")
-            # wait.until(EC.element_to_be_clickable((By.XPATH, COOKIES_AGREEMENT_XPATH))).click()
             self.load_cookies()
 
             self.driver.get(url=f"https://instagram.com/{channel}/")
@@ -186,6 +204,32 @@ class InstagramParser(Parser):
             return None
         finally:
             self.close_parser()
+    
+    async def async_send_reels(self, reels_link: str, message: str, channel: str):
+        loop = asyncio.get_event_loop()
+        partial_send_reels = functools.partial(self.send_reels, reels_link, message, channel)
+        result = await loop.run_in_executor(None, partial_send_reels)
+        return result
+
+    def send_reels(self, reels_link: str, message: str, channel: str):
+        try:
+            wait = WebDriverWait(self.driver, 15)
+
+            self.driver.get(url="https://instagram.com/")
+            self.load_cookies()
+            time.sleep(2)
+            self.driver.get(url=reels_link)
+            time.sleep(5)
+            print("time sleep is over")
+            wait.until(EC.presence_of_element_located((By.XPATH, SEND_REELS_BUTTON_XPATH))).click()
+            time.sleep(10)
+
+        except Exception as e:
+            print(e)
+            logger.log_error(f"An exception occured in send_reels: {e}")
+            return None
+        finally:
+            self.close_parser()
         
 
     def dump_cookies(self):
@@ -202,33 +246,35 @@ class InstagramParser(Parser):
                 self.driver.add_cookie(cookie)
         except Exception as e:
             return e
-    
-    def check_ip(self):
-        self.driver.get("https://whoer.net/ru")
-        time.sleep(10)
-    
-# selenium.common.exceptions.ElementClickInterceptedException
 
-# i.logging_in()
-
-# print(
-#     i.parse_followers(
-#         channel="mashapetrova_1"
+# i = InstagramParser(
+#    
 #     )
+# result = i.send_reels(
+#     reels_link="https://www.instagram.com/reel/C2s3IyeIEYw/?utm_source=ig_web_copy_link",
+#     message=":)",
+#     channel="don_tsolakini"
 # )
+# print(result)
+
 
 async def main():
     i = InstagramParser(
-        login="ivanov.stuff@mail.ru",
-        password="",
-        proxy='45.133.220.83:8000:W7xcL4:U348xM'
+        
     )
-    # result = await i.async_logging_in()
-    # result = await i.async_parse_follower(
-    #     channel="dlgkdlkhjldkhkdl"
-    # )
-    result = await i.async_send_message(message=":)", channel="leomessi")
+    result = await i.async_send_reels(
+        reels_link="https://www.instagram.com/reel/C3FozcloCsu/?utm_source=ig_web_copy_link",
+        message=":)",
+        channel="don_tsolakini"
+    )
+    # result = await i.async_parse_follower(channel="don_tsolakini")
     print(result)
+#     # result = await i.async_logging_in()
+#     # result = await i.async_parse_follower(
+#     #     channel="dlgkdlkhjldkhkdl"
+#     # )
+#     # result = await i.async_send_message(message=":)", channel="leomessi")
+#     # print(result)
 
 if __name__ == "__main__":
     asyncio.run(main())

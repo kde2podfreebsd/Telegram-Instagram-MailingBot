@@ -18,6 +18,14 @@ class ChatMemberDAL:
 
     async def createChatMember(self, username, account_stories_id, target_channel):
         try:
+            existing_account = await self.getChatMember(
+                username=username, 
+                account_stories_id=account_stories_id
+            )
+            if existing_account:
+                logger.log_error(f"ChatMember with username {username} has already been added to data base")
+                return None
+            
             premium_chat_member = PremiumChatMember(
                 username=username, 
                 account_stories_id=account_stories_id,

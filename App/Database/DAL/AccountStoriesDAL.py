@@ -30,6 +30,12 @@ class AccountStoriesDAL:
 
     async def createAccountStories(self, session_name):
         try:
+            existing_account = await self.getAccountBySessionName(
+                session_name=session_name
+            )
+            if existing_account:
+                logger.log_error(f"AccountStories with session name {session_name} has already been added to data base")
+                return None
             session_file_path = os.path.join(sessions_dirPath, f"{session_name}.session")
             account_stories = AccountStories(
                 session_file_path=session_file_path,

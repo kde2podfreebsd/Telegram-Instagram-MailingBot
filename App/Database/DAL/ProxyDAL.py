@@ -15,6 +15,14 @@ class ProxyAddressDAL:
 
     async def createProxyAddress(self, address, account_inst_id):
         try:
+            existing_account = await self.getProxyAddress(
+                address=address, 
+                account_inst_id=account_inst_id
+            )
+            if existing_account:
+                logger.log_error(f"ProxyAddress {address} has already been added to data base")
+                return None
+            
             proxy = ProxyAddress(
                 address=address, 
                 account_inst_id=account_inst_id

@@ -766,6 +766,17 @@ class MarkupBuilder(object):
         cls.errorSuspendedAccount = "❌<b>Аккаунт, чьи логин и пароль вы ввели, забанен</b>"
         return cls.errorSuspendedAccount
 
+    @classmethod
+    @property
+    def errorExpiredProxy(cls):
+        cls.errorExpiredProxy = "❌<b>У введенного прокси адреса закончился срок годности, перейдите в меню рассылки инстаграм, чтобы повторить лоигн в аккаунт</b>"
+        return cls.errorExpiredProxy
+    
+    @classmethod
+    @property
+    def errorExpiredProxyDb(cls):
+        cls.errorExpiredProxyDb = "❌<b>У введенного прокси адреса закончился срок годности, попробуйте ввести другой, либо вернитесь в меню рассылки иистаграм</b>"
+        return cls.errorExpiredProxyDb
 
     @classmethod
     @property
@@ -909,13 +920,13 @@ class MarkupBuilder(object):
     @classmethod
     def errorInsufficientAmountOfProxies(cls, amount_of_proxies: int):
         cls._error_insufficient_amount_of_proxies = f"""<b>❌Необходимо иметь следующее количество прокси для спам-рассылки: {REDQUIRED_AMOUNT_OF_PROXIES}.
-        \nСейчас {amount_of_proxies}/{REDQUIRED_AMOUNT_OF_PROXIES}, добавьте еще с помощью \"💾Добавить прокси\"</b>"""
+        \nСейчас {amount_of_proxies}/{REDQUIRED_AMOUNT_OF_PROXIES}, добавьте еще с помощью \"➕Добавить прокси\"</b>"""
         return cls._error_insufficient_amount_of_proxies
     
     @classmethod
     @property
     def errorInsufficientAmountOfProxiesForParsing(cls):
-        cls.errorInsufficientAmountOfProxiesForParsing = "<b>❌Невозможно спарсить подписчиков из канала без прокси. Добавьте один адрес с помощью \"💾Добавить прокси\"</b>"
+        cls.errorInsufficientAmountOfProxiesForParsing = "<b>❌Невозможно спарсить подписчиков из канала без прокси. Добавьте один адрес с помощью \"➕Добавить прокси\"</b>"
         return cls.errorInsufficientAmountOfProxiesForParsing
     
     @classmethod
@@ -929,6 +940,12 @@ class MarkupBuilder(object):
         cls.addProxyText = "<b>Введите адрес прокси сервера по образцу: IP_ADDRESS:PORT:LOGIN:PASSWORD</b>"
         return cls.addProxyText
     
+    @classmethod
+    @property
+    def addingProxy(cls):
+        cls.addingProxy = "<i>Происходит проверка валидности прокси адреса, ожидайте...</i>"
+        return cls.addingProxy
+
     @classmethod
     @property
     def addedProxyText(cls):

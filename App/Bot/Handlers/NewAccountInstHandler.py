@@ -154,6 +154,22 @@ async def _errorSuspendedAccount(message):
         chat_id=message.chat.id, msgId=msg.message_id
     )
 
+async def _errorExpiredProxy(message):
+    chat_id = message.chat.id
+    await message_context_manager.delete_msgId_from_help_menu_dict(
+        chat_id=chat_id
+    )
+    msg = await bot.send_message(
+        message.chat.id,
+        text=MarkupBuilder.errorExpiredProxy,
+        reply_markup=MarkupBuilder.back_to_spam_inst(),
+        parse_mode="HTML",
+    )
+
+    await message_context_manager.add_msgId_to_help_menu_dict(
+        chat_id=message.chat.id, msgId=msg.message_id
+    )
+
 @bot.message_handler(state=NewAccountInstStates.LoggingIn)
 async def _newAccountLoggingIn(message):
     await bot.delete_state(message.chat.id, message.chat.id)
@@ -172,39 +188,44 @@ async def _newAccountLoggingIn(message):
             password=password,
             proxy=proxy
         )
-        msg_filler = await bot.send_message(
-            message.chat.id,
-            MarkupBuilder.loggingIn,
-            parse_mode="HTML"
-        )
-        
-        exception = await instagramParser.async_logging_in()
-
-        await bot.delete_message(
-                chat_id=message.chat.id, 
-                message_id=msg_filler.id
-            )
-        if exception == None:
-            msg = await bot.send_message(
+        is_valid = await instagramParser.async_check_proxy()
+        if is_valid:
+            msg_filler = await bot.send_message(
                 message.chat.id,
-                text=MarkupBuilder.instLoggingInSuccessfullyText,
-                reply_markup=MarkupBuilder.back_to_spam_inst(),
-                parse_mode="HTML",
+                MarkupBuilder.loggingIn,
+                parse_mode="HTML"
             )
-            async with async_session() as session:
-                account_inst_dal = AccountInstDAL(session)
-                session_name = login
-                await account_inst_dal.createAcount(session_name=session_name)
 
-            await message_context_manager.add_msgId_to_help_menu_dict(
-                chat_id=message.chat.id, msgId=msg.message_id
-            )
-        elif str(exception) == str(instagramParserExceptions.IncorrectPasswordOrLogin):
-            await _errorIncorrectPasswordOrLogin(message)
-        elif str(exception) == str(instagramParserExceptions.SuspendedAccount):
-            await _errorSuspendedAccount(message)
+            exception = await instagramParser.async_logging_in()
+
+            await bot.delete_message(
+                    chat_id=message.chat.id, 
+                    message_id=msg_filler.id
+                )
+            if exception == None:
+                msg = await bot.send_message(
+                    message.chat.id,
+                    text=MarkupBuilder.instLoggingInSuccessfullyText,
+                    reply_markup=MarkupBuilder.back_to_spam_inst(),
+                    parse_mode="HTML",
+                )
+                async with async_session() as session:
+                    account_inst_dal = AccountInstDAL(session)
+                    session_name = login
+                    await account_inst_dal.createAcount(session_name=session_name)
+
+                await message_context_manager.add_msgId_to_help_menu_dict(
+                    chat_id=message.chat.id, msgId=msg.message_id
+                )
+            elif str(exception) == str(instagramParserExceptions.IncorrectPasswordOrLogin):
+                await _errorIncorrectPasswordOrLogin(message)
+            elif str(exception) == str(instagramParserExceptions.SuspendedAccount):
+                await _errorSuspendedAccount(message)
+            else:
+                await _errorLogginIn(message)
         else:
-            await _errorLogginIn(message)
+            await _errorExpiredProxy(message)
+
     else:
         await _errorGetProxyAddress(message)
 

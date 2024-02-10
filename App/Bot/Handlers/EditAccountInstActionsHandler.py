@@ -4,7 +4,7 @@ import re
 from telebot.asyncio_handler_backends import State
 from telebot.asyncio_handler_backends import StatesGroup
 
-from App.Parser.InstagramParser import InstagramParserExceptions
+from App.Parser.InstagramParser import InstagramParserExceptions, InstagramParser
 from App.Bot.Markups import MarkupBuilder
 from App.Config import account_context
 from App.Config import bot
@@ -550,6 +550,23 @@ async def _sendAddProxyText(message):
     )
     await bot.set_state(message.chat.id, EditAccountInstActionStates.AddProxy)
 
+async def _errorExpiredProxyDb(message):
+    chat_id = message.chat.id
+    await message_context_manager.delete_msgId_from_help_menu_dict(
+        chat_id=chat_id
+    )
+    msg = await bot.send_message(
+        message.chat.id,
+        text=MarkupBuilder.errorExpiredProxyDb,
+        reply_markup=MarkupBuilder.back_to_spam_inst(),
+        parse_mode="HTML",
+    )
+
+    await message_context_manager.add_msgId_to_help_menu_dict(
+        chat_id=message.chat.id, msgId=msg.message_id
+    )
+    await bot.set_state(message.chat.id, state = EditAccountInstActionStates.AddProxy)
+
 @bot.message_handler(state=EditAccountInstActionStates.AddProxy)
 async def _addProxy(message):
     await message_context_manager.delete_msgId_from_help_menu_dict(
@@ -564,23 +581,38 @@ async def _addProxy(message):
         proxy_pattern = r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+:[A-Za-z0-9]+:[A-Za-z0-9]+)$'
         if (re.match(proxy_pattern, proxy)):
             async with async_session() as session:
-                proxy_dal = ProxyAddressDAL(session)
-                result = await proxy_dal.createProxyAddress(address=message.text, account_inst_id=account.id)
-                if (result is not None):
-                    msg = await bot.send_message(
-                        message.chat.id,
-                        MarkupBuilder.addedProxyText,
-                        reply_markup=MarkupBuilder.back_to_edit_inst_account(
-                            account_name=account_context.account_name[message.chat.id]
-                        ),
-                        parse_mode="HTML",
-                    )
-                    await message_context_manager.add_msgId_to_help_menu_dict(
-                        chat_id=message.chat.id, msgId=msg.message_id
-                    )
-                    await bot.set_state(message.chat.id, EditAccountInstActionStates.AddProxy)
+                instagramParser = InstagramParser(
+                    login="",
+                    password="",
+                    proxy=proxy
+                )
+                msg_filler = await bot.send_message(
+                    message.chat.id,
+                    MarkupBuilder.addingProxy,
+                    parse_mode="HTML"
+                )
+                is_valid = await instagramParser.async_check_proxy()
+                await bot.delete_message(message.chat.id, msg_filler.id)
+                if (is_valid):
+                    proxy_dal = ProxyAddressDAL(session)
+                    result = await proxy_dal.createProxyAddress(address=message.text, account_inst_id=account.id)
+                    if (result is not None):
+                        msg = await bot.send_message(
+                            message.chat.id,
+                            MarkupBuilder.addedProxyText,
+                            reply_markup=MarkupBuilder.back_to_edit_inst_account(
+                                account_name=account_context.account_name[message.chat.id]
+                            ),
+                            parse_mode="HTML",
+                        )
+                        await message_context_manager.add_msgId_to_help_menu_dict(
+                            chat_id=message.chat.id, msgId=msg.message_id
+                        )
+                        await bot.set_state(message.chat.id, EditAccountInstActionStates.AddProxy)
+                    else:
+                        await _errorProxyAddress(message)
                 else:
-                    await _errorProxyAddress(message)
+                    await _errorExpiredProxyDb(message)
         else:
             await _errorInvalidProxyAdress(message)
 

@@ -38,23 +38,7 @@ async def mainLayer():
                         proxies_list.remove(proxies_list[0])
                         await instagramParser.async_send_message(account.message, follower)
                         await asyncio.sleep(5)
-                await asyncio.sleep(account.delay)
-
-async def schedule_send_message(account_inst_dal, instagramParser, follower):
-    
-    account = await account_inst_dal.getAccountBySessionName(instagramParser.login)
-    usernames_job = aioschedule.every().day.do(update_db, account_inst_dal, account)
-
-    if account:
-        aioschedule.every(1).minute.do(instagramParser.async_send_message, account.message, follower)
-
-    while True:
-        await aioschedule.run_pending()
-        await asyncio.sleep(15)
-
-async def update_db(account_stories_dal, account):
-    await account_stories_dal.getFollowers(account.id)
-
+                await asyncio.sleep(60*account.delay)
 
 if __name__ == "__main__":
     asyncio.run(mainLayer())
