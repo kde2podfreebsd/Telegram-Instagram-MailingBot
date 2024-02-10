@@ -14,26 +14,28 @@ async def mainLayer():
         await update_premium_members_db(
             account_stories_dal=account_stories_dal
         )
-        while True:
-            accounts_session_names = await account_stories_dal.getSessionNamesWithTrueStatus()
-            user_agent_clients = [UserAgentCore(session_name) for session_name in accounts_session_names]
-            tasks = []
-            for client in user_agent_clients:
-                account = await account_stories_dal.getAccountBySessionName(session_name=client.session_name)
-                premium_members = []
-                for premium_member in premium_members_db:
-                    if (premium_member["id"] == account.id):
-                        premium_members.append(premium_member["username"])
+       
+        accounts_session_names = await account_stories_dal.getSessionNamesWithTrueStatus()
+        user_agent_clients = [UserAgentCore(session_name) for session_name in accounts_session_names]
+    
+        for client in user_agent_clients:
+            account = await account_stories_dal.getAccountBySessionName(session_name=client.session_name)
+            if account and account.target_channels:
+                await user_agent_thread(client=client, id=account.id)
+                aioschedule.every(account.delay).minutes.do(user_agent_thread, client, account.id)
+        
+        await asyncio.sleep(60)  
 
-                task = coro_give_reaction(client=client, usernames=premium_members)
-                tasks.append(task)
-  
-                
-            asyncio.gather(*tasks)
-            await asyncio.sleep(60)  
+async def user_agent_thread(client: UserAgentCore, id: int):
+    tasks = []
+    premium_members = []
+    for premium_member in premium_members_db:
+        if (premium_member["id"] == id):
+            premium_members.append(premium_member["username"])
 
-async def coro_give_reaction(client: UserAgentCore, usernames: list):
-    await client.giveReaction(usernames)
+    task = asyncio.create_task(client.giveReaction(premium_members))
+    tasks.append(task)
+    await asyncio.gather(*tasks)
 
 async def update_premium_members_db(account_stories_dal: AccountStoriesDAL):
     global premium_members_db
