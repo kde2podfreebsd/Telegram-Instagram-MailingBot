@@ -23,8 +23,9 @@ async def mainLayer():
             if account and account.target_channels:
                 await user_agent_thread(client=client, id=account.id)
                 aioschedule.every(account.delay).minutes.do(user_agent_thread, client, account.id)
-        
-        await asyncio.sleep(60)  
+        while True:
+            await aioschedule.run_pending()
+            await asyncio.sleep(5)  
 
 async def user_agent_thread(client: UserAgentCore, id: int):
     tasks = []
