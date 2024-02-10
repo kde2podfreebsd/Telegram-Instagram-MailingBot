@@ -17,28 +17,41 @@ async def mainLayer():
         account_inst_dal = AccountInstDAL(session)
         proxy_dal = ProxyAddressDAL(session)
         uvloop.install()
-
+        await update_followers_db(
+            account_inst_dal=account_inst_dal
+        )
+        aioschedule.every().day.do(update_followers_db, account_inst_dal)
         while True:
             accounts = await account_inst_dal.getSessionNamesWithTrueStatus()
-
+            tasks = []
             for account_name in accounts:
                 account = await account_inst_dal.getAccountBySessionName(account_name)
                 if account and account.target_channels:
-                    followers = await account_inst_dal.getFollowers(account_inst_id=account.id)
-                    for follower in followers:
+                    
+                    for follower in followers_db:
                         proxies_list = await proxy_dal.getProxyAddressById(
                             account_inst_id=account.id
                         )
-                        instagramParser = InstagramParser(
-                            login=account_name,
-                            password="",
-                            proxy=proxies_list[0]
-                        )
-                        proxies_list.append(proxies_list[0])
-                        proxies_list.remove(proxies_list[0])
-                        await instagramParser.async_send_message(account.message, follower)
-                        await asyncio.sleep(5)
-                await asyncio.sleep(60*account.delay)
+                        if (follower["id"] == account.id):
+                            instagramParser = InstagramParser(
+                                login=account_name,
+                                password="",
+                                proxy=proxies_list[0]
+                            )
+                            proxies_list.append(proxies_list[0])
+                            proxies_list.remove(proxies_list[0])
+                            task = asyncio.create_task(
+                                instagramParser.async_send_message(account.message, follower["username"])
+                            )
+                            tasks.append(task)
+                    
+                await asyncio.gather(*tasks)
+                await asyncio.sleep(60)
+
+async def update_followers_db(account_inst_dal: AccountInstDAL):
+    global followers_db
+    followers_db = await account_inst_dal.getAllFollowers()
 
 if __name__ == "__main__":
     asyncio.run(mainLayer())
+

@@ -242,15 +242,21 @@ class AccountInstDAL:
     
     async def getFollowers(self, account_inst_id):
         async with async_session() as session:
-            chat_member_dal = FollowerDAL(session)
-            result = await chat_member_dal.db_session.execute(select(Follower).filter(Follower.account_inst_id == account_inst_id))
+            follower_dal = FollowerDAL(session)
+            result = await follower_dal.db_session.execute(select(Follower).filter(Follower.account_inst_id == account_inst_id))
             return [member.username for member in result.scalars()]
+    
+    async def getAllFollowers(self):
+        async with async_session() as session:
+            follower_dal = FollowerDAL(session)
+            result = await follower_dal.db_session.execute(select(Follower))
+            return [{"username": member.username, "id": member.account_inst_id} for member in result.scalars()]
     
 async def main():
     async with async_session() as session:
         x = AccountInstDAL(session)
         account = await x.getAccountBySessionName(session_name="ivanov.stuff@mail.ru")
-        result = await x.getFollowers(account.id)
+        result = await x.getAllFollowers()
         print(result)
 
 if __name__ == "__main__":

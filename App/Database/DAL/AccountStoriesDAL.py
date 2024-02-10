@@ -181,7 +181,12 @@ class AccountStoriesDAL:
             os.path.splitext(os.path.basename(path))[0] for path in session_paths
         ]
         return session_names
-        
+    
+    async def getAllChatMembers(self):
+        async with async_session() as session:
+            follower_dal = ChatMemberDAL(session)
+            result = await follower_dal.db_session.execute(select(PremiumChatMember))
+            return [{"username": member.username, "id": member.account_stories_id} for member in result.scalars()]
 
 async def main():
     async with async_session() as session:
