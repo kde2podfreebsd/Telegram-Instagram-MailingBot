@@ -419,6 +419,12 @@ class MarkupBuilder(object):
                 ],
                 [
                     types.InlineKeyboardButton(
+                        text="⏰Изменить задержку",
+                        callback_data=f"change_delay#{account_name}",
+                    )
+                ],
+                [
+                    types.InlineKeyboardButton(
                         text="➕Добавить рекламный чат",
                         callback_data=f"add_adv_chat#{account_name}",
                     )
@@ -501,6 +507,7 @@ class MarkupBuilder(object):
 🤖Аккаунт: {account_username}
 🎯Целевой канал: {target_chat}
 🆙Статус: {"Активен" if account.status else "Не активен"}
+⏰Задержка в минутах: {account.delay}
 ✍️ChatGPT prompt:
 -------------------
 {prompt}
@@ -587,7 +594,7 @@ class MarkupBuilder(object):
                 ],
                 [
                     types.InlineKeyboardButton(
-                        text="⏰Изменить задержку между рассылками",
+                        text="⏰Изменить задержку",
                         callback_data=f"chng_inst_delay#{account_name}",
                     )
                 ],
@@ -1153,6 +1160,24 @@ profile picture: {"" if isProfilePicture else "None"}
     def sendChangePromptText(cls):
         cls._sendChangePromptText = "🎯<b>Укажите @username целевого канала.</b>\n<i>Этот @username будет подставляться в рекламное сообщение и prompt для ChatGPT</i>"
         return cls._sendChangePromptText
+    
+    @classmethod
+    @property
+    def sendChangeDelayText(cls):
+        cls.sendChangeDelayText = "<b>Введите задержку в минутах для рассылки телеграм:</b>"
+        return cls.sendChangeDelayText
+    
+    @classmethod
+    @property
+    def errorNotIntegerDelayTg(cls):
+        cls.errorNotIntegerDelayTg = "<b>❌Задержка является натуральным числом, введите её заново или перейдите в меню спам рассылки телеграм</b>"
+        return cls.errorNotIntegerDelayTg
+
+    @classmethod
+    @property
+    def delayForSpamTgHasBeenSet(cls):
+        cls.delayForSpamTgHasBeenSet = "<b>✅Новая задержка для автоматической рассылки телеграм была установлена</b>"
+        return cls.delayForSpamTgHasBeenSet
 
     @classmethod
     @property

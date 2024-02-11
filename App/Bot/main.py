@@ -15,6 +15,7 @@ from App.Bot.Handlers.EditAccountActionsHandler import _sendReloadChatGPTMessage
 from App.Bot.Handlers.EditAccountActionsHandler import _sendRemoveAdvChatText
 from App.Bot.Handlers.EditAccountActionsHandler import _set_status_off
 from App.Bot.Handlers.EditAccountActionsHandler import _set_status_on
+from App.Bot.Handlers.EditAccountActionsHandler import _sendChangeDelayText
 
 from App.Bot.Handlers.ServiceMenuHandler import _serviceMenu
 
@@ -336,6 +337,13 @@ class Bot:
                 chat_id=call.message.chat.id, account_name=account_name
             )
             await _sendChangePromptText(call.message)
+
+        if "change_delay" in call.data:
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+            await _sendChangeDelayText(call.message)
 
         if "add_adv_chat" in call.data:
             account_name = call.data.split("#")[-1]

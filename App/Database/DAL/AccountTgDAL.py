@@ -148,6 +148,20 @@ class AccountDAL:
         else:
             logger.log_error("Account doesnt exists in database")
             return False
+    
+    async def updateDelay(self, session_name, new_delay):
+        account = await self.getAccountBySessionName(
+            session_name=session_name
+        )
+        if account:
+            account.delay = new_delay
+            await self.db_session.commit()
+            logger.log_info(f"AccountTg {session_name}'s delay has been changed to {new_delay}")
+            return True
+        else:
+            logger.log_error(f"AccountTg {session_name} does not exist in data base")
+            return False
+    
 
     async def getAccountBySessionName(self, session_name):
         result = await self.db_session.execute(
