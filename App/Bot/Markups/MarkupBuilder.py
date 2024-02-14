@@ -314,7 +314,7 @@ class MarkupBuilder(object):
             account_username = account_username.replace("_", "\\_")
 
             target_channels = ""
-            if account.target_channels is not None:
+            if account.target_channels is not None and account.target_channels != []:
                 amount_of_target_channels = len(account.target_channels)
                 for x in account.target_channels:
                     y = x.replace("_", "\\_") if "." in x else x
@@ -477,7 +477,7 @@ class MarkupBuilder(object):
             )
 
             advertising_channels = ""
-            if account.advertising_channels is not None:
+            if account.advertising_channels is not None and account.advertising_channels != []:
                 for x in account.advertising_channels:
                     y = x.replace("_", "\\_") if "_" in x else x
                     advertising_channels += f"{y}\n"

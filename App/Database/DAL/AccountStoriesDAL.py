@@ -111,7 +111,7 @@ class AccountStoriesDAL:
                         )
                 account_stories.target_channels.remove(username)
                 if len(account_stories.target_channels) == 0:
-                    account_stories.status = False
+                    account_stories.aioscheduler_status = False
                 await self.db_session.flush()
                 logger.log_info(
                     f"{username} removed from {session_name}.target_channels"
