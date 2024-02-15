@@ -40,23 +40,3 @@ class Parser:
             # self.__display.stop()
         except Exception as e:
             return e
-
-    # def create_session(self, url: str):
-    #     try:
-    #         self.driver.get(url=url)
-    #         time.sleep(25)
-    #         pickle.dump(self.driver.get_cookies(), open(f'sessions/{self.resource}', 'wb'))
-    #         print(f"session saved! Service: {self.resource}")
-    #     except Exception as e:
-    #         return e
-    #     finally:
-    #         self.close_parser()
-
-    # def load_cookie(self, url: str):
-    #     try:
-    #         self.driver.get(url)
-    #         for cookie in pickle.load(open(f'App/{self.resource}', 'rb')):
-    #             self.driver.add_cookie(cookie)
-    #         self.driver.get(url)
-    #     except Exception as e:
-    #         return e

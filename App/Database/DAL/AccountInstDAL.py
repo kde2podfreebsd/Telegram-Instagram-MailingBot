@@ -134,6 +134,8 @@ class AccountInstDAL:
                             target_channel=target_channel
                         )
                 account.target_channels.remove(target_channel)
+                if (len(account.target_channels) == 0):
+                    account.status = False
                 await self.db_session.flush()
                 logger.log_info(
                     f"{target_channel} removed from {session_name}.target_channels"

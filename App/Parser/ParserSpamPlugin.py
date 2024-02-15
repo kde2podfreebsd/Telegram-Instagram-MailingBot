@@ -16,19 +16,23 @@ async def mainLayer():
             account_inst_dal=account_inst_dal
         )
         aioschedule.every().day.do(update_followers_db, account_inst_dal)
-      
-        accounts = await account_inst_dal.getSessionNamesWithTrueStatus()
-        for account_name in accounts:
-            account = await account_inst_dal.getAccountBySessionName(account_name)
-            if account and account.target_channels:
-                await parser_thread(
-                    account_name=account_name,
-                    message=account.message,
-                    id=account.id,
-                    proxy_dal=proxy_dal
-                ) 
-                aioschedule.every(account.delay).minutes.do(parser_thread, account_name, account.message, account.id, proxy_dal)
+
+        await update_session_name_with_true_status(
+            account_inst_dal=account_inst_dal
+        )
+        aioschedule.every().minute.do(update_session_name_with_true_status, account_inst_dal)
         while True:
+            for account_name in accounts:
+                account = await account_inst_dal.getAccountBySessionName(account_name)
+                if account and account.target_channels:
+                    # await parser_thread(
+                    #     account_name=account_name,
+                    #     message=account.message,
+                    #     id=account.id,
+                    #     proxy_dal=proxy_dal
+                    # ) 
+                    aioschedule.every(account.delay).minutes.do(parser_thread, account_name, account.message, account.id, proxy_dal)
+            
             await aioschedule.run_pending()
             await asyncio.sleep(5)
 
@@ -56,7 +60,11 @@ async def parser_thread(
             )
             tasks.append(task)
     await asyncio.gather(*tasks)
-                            
+
+async def update_session_name_with_true_status(account_inst_dal: AccountInstDAL):
+    global accounts
+    accounts = await account_inst_dal.getSessionNamesWithTrueStatus()
+
 async def update_followers_db(account_inst_dal: AccountInstDAL):
     global followers_db
     followers_db = await account_inst_dal.getAllFollowers()

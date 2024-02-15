@@ -21,19 +21,12 @@ async def mainLayer():
         accounts_session_names_prev_state = await update_session_name_with_true_status(
             account_stories_dal=account_stories_dal
         )
-        aioschedule.every(30).seconds.do(update_session_name_with_true_status, account_stories_dal)
-        
-        aioschedule.every().minutes.do(spam_plugin_thread, account_stories_dal)
 
-        cntr = 1
+        aioschedule.every().minute.do(update_session_name_with_true_status, account_stories_dal)
+        aioschedule.every().minute.do(spam_plugin_thread, account_stories_dal)
+
         while True:
             await aioschedule.run_pending()
-            print(f"------------IT'S TRY NUMBER {cntr}------------")
-            for aio_jobs in aioschedule.jobs:
-                print(f"aioschedule_job={aio_jobs}, tags={aio_jobs.tags}")
-            for job in jobs:
-                print(f"regular job={job}")
-            cntr += 1
             await asyncio.sleep(5)  
 
 async def spam_plugin_thread(account_stories_dal: AccountStoriesDAL):
