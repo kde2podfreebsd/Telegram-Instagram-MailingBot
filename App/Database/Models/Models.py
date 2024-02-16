@@ -14,6 +14,7 @@ class AccountTg(Base):
     target_chat = Column(String, nullable=True, default="Не указан")
     message = Column(String, nullable=True, default="Не указано")
     prompt = Column(String, nullable=True, default="Не указан")
+    delay = Column(Integer, nullable=False, default=15)
     advertising_channels = Column(MutableList.as_mutable(ARRAY(String)), nullable=True)
     status = Column(Boolean, nullable=False, default=False)
 
