@@ -165,14 +165,13 @@ class InstagramParser(Parser):
             time.sleep(2)  
             curr_followers_count += step
 
-    async def async_send_message(self, message: str, channel: str):
+    async def async_send_message(self, message: str, reels_link: str | None, channel: str):
         loop = asyncio.get_event_loop()
-        partial_send_message = functools.partial(self.send_message, message, channel)
+        partial_send_message = functools.partial(self.send_message, message, reels_link, channel)
         result = await loop.run_in_executor(None, partial_send_message)
         return result
 
-    def send_message(self, message: str, channel: str):
-        instagramParserExceptions = InstagramParserExceptions()
+    def send_message(self, message: str, reels_link: str | None, channel: str):
         try:
             wait = WebDriverWait(self.driver, 15)
 
@@ -195,6 +194,11 @@ class InstagramParser(Parser):
                 
             wait.until(EC.element_to_be_clickable((By.XPATH, TURN_ON_NOTIFICATIONS_BUTTON_XPATH))).click()
             send_message_field = wait.until(EC.presence_of_element_located((By.XPATH, SEND_MESSAGE_FIELD_XPATH)))
+
+            if (reels_link is not None):
+                send_message_field.send_keys(reels_link)
+                send_message_field.send_keys(Keys.ENTER)
+            
             send_message_field.send_keys(message)
             send_message_field.send_keys(Keys.ENTER)
             time.sleep(5)
@@ -211,27 +215,6 @@ class InstagramParser(Parser):
         result = await loop.run_in_executor(None, partial_send_reels)
         return result
 
-    def send_reels(self, reels_link: str, message: str, channel: str):
-        try:
-            wait = WebDriverWait(self.driver, 15)
-
-            self.driver.get(url="https://instagram.com/")
-            self.load_cookies()
-            time.sleep(2)
-            self.driver.get(url=reels_link)
-            time.sleep(5)
-            print("time sleep is over")
-            wait.until(EC.presence_of_element_located((By.XPATH, SEND_REELS_BUTTON_XPATH))).click()
-            time.sleep(10)
-
-        except Exception as e:
-            print(e)
-            logger.log_error(f"An exception occured in send_reels: {e}")
-            return None
-        finally:
-            self.close_parser()
-        
-
     def dump_cookies(self):
         try:
             cookies = self.driver.get_cookies()
@@ -247,34 +230,16 @@ class InstagramParser(Parser):
         except Exception as e:
             return e
 
-# i = InstagramParser(
-#    
-#     )
-# result = i.send_reels(
-#     reels_link="https://www.instagram.com/reel/C2s3IyeIEYw/?utm_source=ig_web_copy_link",
-#     message=":)",
-#     channel="don_tsolakini"
-# )
-# print(result)
-
-
 async def main():
     i = InstagramParser(
         
     )
-    result = await i.async_send_reels(
-        reels_link="https://www.instagram.com/reel/C3FozcloCsu/?utm_source=ig_web_copy_link",
-        message=":)",
-        channel="don_tsolakini"
+
+    result = await i.async_send_message(
+        message=":)", 
+        reels_link=None,
+        channel="leomessi"
     )
-    # result = await i.async_parse_follower(channel="don_tsolakini")
-    print(result)
-#     # result = await i.async_logging_in()
-#     # result = await i.async_parse_follower(
-#     #     channel="dlgkdlkhjldkhkdl"
-#     # )
-#     # result = await i.async_send_message(message=":)", channel="leomessi")
-#     # print(result)
 
 if __name__ == "__main__":
     asyncio.run(main())
