@@ -258,7 +258,7 @@ async def main():
     async with async_session() as session:
         x = AccountInstDAL(session)
         account = await x.getAccountBySessionName(session_name="ivanov.stuff@mail.ru")
-        result = await x.getAllFollowers()
+        result = await x.getSessionNamesWithTrueStatus()
         print(result)
 
 if __name__ == "__main__":

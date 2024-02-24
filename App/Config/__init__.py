@@ -10,6 +10,7 @@ pfp_file_path = "/Users/user/Spam-Tg-Inst-Service/me.jpg"
 logs_dirPath = f"{basedir}/Logger/logs"
 
 REDQUIRED_AMOUNT_OF_PROXIES = 2
+UPDATE_DB_DELAY = 5 #minutes
 
 
 def singleton(cls):

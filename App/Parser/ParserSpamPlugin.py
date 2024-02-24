@@ -5,6 +5,7 @@ from App.Database.DAL.AccountInstDAL import AccountInstDAL
 from App.Database.DAL.ProxyDAL import ProxyAddressDAL
 from App.Database.session import async_session
 from App.Parser.InstagramParser import InstagramParser
+from App.Config import UPDATE_DB_DELAY
 import aioschedule
 
 jobs = []
@@ -17,23 +18,16 @@ async def mainLayer():
         await update_followers_db(
             account_inst_dal=account_inst_dal
         )
-        aioschedule.every(3).hours.do(update_followers_db, account_inst_dal)
+        aioschedule.every(UPDATE_DB_DELAY).minutes.do(update_followers_db, account_inst_dal)
 
         await update_session_name_with_true_status(
             account_inst_dal=account_inst_dal
         )
         aioschedule.every().minute.do(update_session_name_with_true_status, account_inst_dal, proxy_dal)
         aioschedule.every().minute.do(spam_thread, account_inst_dal, proxy_dal)
-        cntr = 1
         while True:
             await aioschedule.run_pending()
             await asyncio.sleep(5)
-            print(f"------------IT'S TRY NUMBER {cntr}------------")
-            for aio_jobs in aioschedule.jobs:
-                print(f"aioschedule_job={aio_jobs}, tags={aio_jobs.tags}")
-            for job in jobs:
-                print(f"regular job={job}")
-            cntr += 1
 
 async def spam_thread(account_inst_dal: AccountInstDAL, proxy_dal: ProxyAddressDAL):
 
@@ -102,10 +96,6 @@ async def parser_thread(
             )
             tasks.append(task)
     await asyncio.gather(*tasks)
-
-# async def check_proxies_validity(proxy_dal: ProxyAddressDAL):
-
-
 
 async def update_session_name_with_true_status(account_inst_dal: AccountInstDAL):
     global accounts_session_names

@@ -55,6 +55,7 @@ from App.Bot.Handlers.EditAccountInstActionsHandler import _sendAddProxyText
 from App.Bot.Handlers.EditAccountInstActionsHandler import _setDelayForInstText
 from App.Bot.Handlers.EditAccountInstActionsHandler import _updateReelsLinkText
 from App.Bot.Handlers.EditAccountInstActionsHandler import _errorInsufficientAmountOfProxies
+from App.Bot.Handlers.EditAccountInstActionsHandler import _errorNoMessageAndNoReels
 from App.Bot.Handlers.EditAccountInstActionsHandler import _sendDeleteProxyText
 
 from App.Bot.Handlers.NewAccountHandler import _newAccountMenu
@@ -540,6 +541,8 @@ class Bot:
                     await _errorNoTargetInstChannels(call.message)
                 elif (len(account.target_channels) == 0):
                     await _errorNoTargetInstChannels(call.message)
+                elif (account.message == "Не указано" and account.reels_link == "Не указана"):
+                    await _errorNoMessageAndNoReels(call.message)
                 else:
                     new_status = (False if account.status else True)
                     await account_inst_dal.updateStatus(
@@ -560,6 +563,9 @@ class Bot:
             await _sendAddProxyText(message=call.message)
         
         if "delete_proxy" in call.data:
+            await bot.delete_state(
+                user_id=call.message.chat.id, chat_id=call.message.chat.id
+            )
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=call.message.chat.id
             )

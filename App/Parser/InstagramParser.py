@@ -29,6 +29,7 @@ class InstagramParserExceptions():
         self.PageNotFound = Exception("The channel name you have entered is invalid")
         self.SuspendedAccount = Exception("This instagram account has been suspended")
         self.PrivateAccount = Exception("Message cannot be sent to user, as they prhobited messaging them")
+        self.ProxyConnectionFailed = Exception("unknown error: net::ERR_PROXY_CONNECTION_FAILED")
 
 
 class InstagramParser(Parser):
@@ -229,17 +230,3 @@ class InstagramParser(Parser):
                 self.driver.add_cookie(cookie)
         except Exception as e:
             return e
-
-async def main():
-    i = InstagramParser(
-        
-    )
-
-    result = await i.async_send_message(
-        message=":)", 
-        reels_link=None,
-        channel="leomessi"
-    )
-
-if __name__ == "__main__":
-    asyncio.run(main())
