@@ -26,3 +26,26 @@ async def _editAccountsInstMenu(message):
     await message_context_manager.add_msgId_to_help_menu_dict(
         chat_id=message.chat.id, msgId=msg.message_id
     )
+
+
+async def _showAccountInstActions(message, account_name):
+    msg_list = await MarkupBuilder.showAccountInstActions(account_name=account_name)
+    for x in range(len(msg_list)):
+        if x + 1 == len(msg_list):
+            msg = await bot.send_message(
+                chat_id=message.chat.id,
+                text=msg_list[x],
+                reply_markup=MarkupBuilder.AccountInstEditActions(
+                    account_name=account_name
+                ),
+                parse_mode="MARKDOWN",
+            )
+            await message_context_manager.add_msgId_to_help_menu_dict(
+                chat_id=message.chat.id, msgId=msg.message_id
+            )
+        else:
+            await bot.send_message(
+                chat_id=message.chat.id,
+                text=msg_list[x],
+                parse_mode="MARKDOWN",
+            )

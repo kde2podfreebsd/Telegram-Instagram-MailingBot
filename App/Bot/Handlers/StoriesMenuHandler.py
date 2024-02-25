@@ -1,24 +1,32 @@
-import telebot
-
 from App.Bot.Markups import MarkupBuilder
 from App.Config import bot
 from App.Config import message_context_manager
-from App.Config import sessions_dirPath
-from App.Database.DAL.AccountTgDAL import AccountDAL
-from App.Database.session import async_session
+from App.Config import account_context
 
 async def _stories(message, account_name):
-    msg = await bot.send_message(message.chat.id, 
-        MarkupBuilder.storiesMenuText,
-        reply_markup=MarkupBuilder.StoriesMenu(account_name=account_name),
-        parse_mode="MarkdownV2"
-    )
-    
-    await message_context_manager.add_msgId_to_help_menu_dict(
-        chat_id=message.chat.id, msgId=msg.message_id
-    )
+    msg_list = await MarkupBuilder.showAccountStoriesActions(account_name=account_name)
 
-async def _accountSessionsListStories(message):
+    for x in range(len(msg_list)):
+        if x + 1 == len(msg_list):
+            msg = await bot.send_message(
+                chat_id=message.chat.id,
+                text=msg_list[x],
+                reply_markup=MarkupBuilder.StoriesMenu(
+                    account_name=account_name
+                ),
+                parse_mode="MARKDOWN",
+            )
+            await message_context_manager.add_msgId_to_help_menu_dict(
+                chat_id=message.chat.id, msgId=msg.message_id
+            )
+        else:
+            await bot.send_message(
+                chat_id=message.chat.id,
+                text=msg_list[x],
+                parse_mode="MARKDOWN",
+            )
+
+async def _showAccountStories(message):
     msg_to_del = await bot.send_message(
         message.chat.id,
         "⚙️",
@@ -33,7 +41,7 @@ async def _accountSessionsListStories(message):
     msg = await bot.send_message(
         message.chat.id,
         MarkupBuilder.editAccountsMenuText,
-        reply_markup=await MarkupBuilder.AccountListKeyboardStroies(),
+        reply_markup=await MarkupBuilder.AccountStoriesListKeyboard(),
         parse_mode="HTML",
     )
 
@@ -41,3 +49,27 @@ async def _accountSessionsListStories(message):
         chat_id=message.chat.id, msgId=msg.message_id
     )
 
+async def _aioschedulerStoriesMenu(message):
+    account_name = account_context.account_name[message.chat.id]
+    msg_list = await MarkupBuilder.showAccountStoriesAioschdeulerActions(
+        account_name=account_name
+    )
+    for x in range(len(msg_list)):
+        if x + 1 == len(msg_list):
+            msg = await bot.send_message(
+                chat_id=message.chat.id,
+                text=msg_list[x],
+                reply_markup=MarkupBuilder.AioshedulerStoriesMenu(
+                    account_name=account_name
+                ),
+                parse_mode="MARKDOWN",
+            )
+            await message_context_manager.add_msgId_to_help_menu_dict(
+                chat_id=message.chat.id, msgId=msg.message_id
+            )
+        else:
+            await bot.send_message(
+                chat_id=message.chat.id,
+                text=msg_list[x],
+                parse_mode="MARKDOWN",
+            )

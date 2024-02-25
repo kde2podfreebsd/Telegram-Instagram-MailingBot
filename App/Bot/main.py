@@ -15,6 +15,7 @@ from App.Bot.Handlers.EditAccountActionsHandler import _sendReloadChatGPTMessage
 from App.Bot.Handlers.EditAccountActionsHandler import _sendRemoveAdvChatText
 from App.Bot.Handlers.EditAccountActionsHandler import _set_status_off
 from App.Bot.Handlers.EditAccountActionsHandler import _set_status_on
+from App.Bot.Handlers.EditAccountActionsHandler import _sendChangeDelayText
 
 from App.Bot.Handlers.ServiceMenuHandler import _serviceMenu
 
@@ -24,33 +25,56 @@ from App.Bot.Handlers.EditAccountVisualActionsHandler import _sendChangeFirstNam
 from App.Bot.Handlers.EditAccountVisualActionsHandler import _sendChangeLastNameText
 from App.Bot.Handlers.EditAccountVisualActionsHandler import _sendChangeUsernameText
 from App.Bot.Handlers.EditAccountVisualActionsHandler import _sendChangeProfilePictureText
+from App.Bot.Handlers.EditAccountVisualActionsHandler import _sendChangeAccountDescriptionText
 
 from App.Bot.Handlers.SpamTgHandler import _spamTg
 from App.Bot.Handlers.SpamInstHandler import _spamInst
 
 from App.Bot.Handlers.StoriesMenuHandler import _stories
-from App.Bot.Handlers.StoriesMenuHandler import _accountSessionsListStories
-from App.Bot.Handlers.StoriesActionsHandler import _updateDb
-from App.Bot.Handlers.StoriesActionsHandler import _deleteDb
-from App.Bot.Handlers.StoriesActionsHandler import _startStories
+from App.Bot.Handlers.StoriesMenuHandler import _showAccountStories
+from App.Bot.Handlers.StoriesMenuHandler import _aioschedulerStoriesMenu
+from App.Bot.Handlers.StoriesActionsHandler import _sendAddTargetChatText
+from App.Bot.Handlers.StoriesActionsHandler import _sendDeleteTargetChatText
+from App.Bot.Handlers.StoriesActionsHandler import _launchStories
+from App.Bot.Handlers.StoriesActionsHandler import _setDelayForAioschedulerText
+from App.Bot.Handlers.StoriesActionsHandler import _changeStatusForAioscheduler
+from App.Bot.Handlers.StoriesActionsHandler import _errorNoTargetChannels
 
 from App.Bot.Handlers.EditAccountsMenuHandler import _editAccountsMenu
-from App.Bot.Handlers.EditAccountsInstMenuHandler import _editAccountsInstMenu
 from App.Bot.Handlers.EditAccountsMenuHandler import _showAccountActions
+from App.Bot.Handlers.EditAccountsInstMenuHandler import _editAccountsInstMenu
+from App.Bot.Handlers.EditAccountsInstMenuHandler import _showAccountInstActions
+
+from App.Bot.Handlers.EditAccountInstActionsHandler import _sendUpdateMessageText
+from App.Bot.Handlers.EditAccountInstActionsHandler import _sendAddTargetChannelText
+from App.Bot.Handlers.EditAccountInstActionsHandler import _sendRemoveTargetChannelText
+from App.Bot.Handlers.EditAccountInstActionsHandler import _sendDeleteAccountInstText
+from App.Bot.Handlers.EditAccountInstActionsHandler import _changeStatusAccountInst
+from App.Bot.Handlers.EditAccountInstActionsHandler import _errorNoTargetInstChannels
+from App.Bot.Handlers.EditAccountInstActionsHandler import _sendAddProxyText
+from App.Bot.Handlers.EditAccountInstActionsHandler import _setDelayForInstText
+from App.Bot.Handlers.EditAccountInstActionsHandler import _updateReelsLinkText
+from App.Bot.Handlers.EditAccountInstActionsHandler import _errorInsufficientAmountOfProxies
+from App.Bot.Handlers.EditAccountInstActionsHandler import _errorNoMessageAndNoReels
+from App.Bot.Handlers.EditAccountInstActionsHandler import _sendDeleteProxyText
+
 from App.Bot.Handlers.NewAccountHandler import _newAccountMenu
-from App.Bot.Handlers.NewAccountInstHandler import _newAccountLoggingIn
-from App.Bot.Handlers.NewAccountInstHandler import _newAccountLoggingInCookies
-from App.Bot.Handlers.NewAccountInstHandler import _newAccountLoggingInManuallyText
+from App.Bot.Handlers.NewAccountInstHandler import _getInstAccountLogin
+from App.Bot.Handlers.NewAccountInstHandler import _getInstAccountPassword
+from App.Bot.Handlers.NewAccountInstHandler import _getProxyAddress
 
 from App.Bot.Markups import MarkupBuilder  # noqa
 from App.Bot.Middlewares import FloodingMiddleware
 from App.Config import account_context
 from App.Config import bot
 from App.Config import message_context_manager
+from App.Config import REDQUIRED_AMOUNT_OF_PROXIES
 from App.Config import singleton
 from App.Database.DAL.AccountTgDAL import AccountDAL
+from App.Database.DAL.AccountStoriesDAL import AccountStoriesDAL
 from App.Database.session import async_session
 from App.Database.DAL.AccountInstDAL import AccountInstDAL
+from App.Database.DAL.ProxyDAL import ProxyAddressDAL
 
 
 
@@ -105,13 +129,24 @@ class Bot:
             )
             await _showAccountActions(message=call.message, account_name=account_name)
 
-        if call.data == "vis_cfg" or "back_to_vis_cfg" == call.data:
+        if call.data == "vis_cfg": 
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=call.message.chat.id
             )
             await _accountSessionsList(message=call.message)
         
+        if call.data == "back_to_vis_cfg":
+            for msgId in message_context_manager.help_menu_msgId_to_delete[call.message.chat.id]:
+                await bot.delete_message(chat_id=call.message.chat.id, message_id=msgId)
+            message_context_manager.help_menu_msgId_to_delete[call.message.chat.id] = None
+
+            await _accountSessionsList(message=call.message)
+
+
         if "viscfg_account" in call.data or "back_to_viscfg_account" in call.data:
+            await bot.delete_state(
+                user_id=call.message.chat.id, chat_id=call.message.chat.id
+            )
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=call.message.chat.id
             )
@@ -120,45 +155,49 @@ class Bot:
             await _visualConfig(account_name=account_name, message=call.message)
 
         # ------------------stories------------------
-        
-        if call.data == "look_stories" or call.data == "back_to_look_stories":
+
+        if call.data == "stories_menu" or call.data == "back_to_stories_menu":
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=call.message.chat.id
             )
-            await _accountSessionsListStories(message=call.message)
+            
+            await _showAccountStories(message=call.message)
 
-        if "acc_stories" in call.data or "back_to_stories" in call.data:
+        if "look_stories" in call.data or "back_to_look_stories" in call.data:
+            await bot.delete_state(
+                user_id=call.message.chat.id, chat_id=call.message.chat.id
+            )
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=call.message.chat.id
             )
             account_name = call.data.split("#")[-1]
-            
-            await _stories(message=call.message, account_name=account_name)
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+            await _stories(account_name=account_name, message=call.message)
         
 
         # --------------stories actions--------------
         
-        if "db_update" in call.data:
+        if "add_trgt_chnl" in call.data:
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=call.message.chat.id
             )
             account_name = call.data.split("#")[-1]
             account_context.updateAccountName(
-                chat_id=call.message.chat.id,
-                account_name=account_name
+                chat_id=call.message.chat.id, account_name=account_name
             )
-            await _updateDb(message=call.message)
+            await _sendAddTargetChatText(message=call.message)
         
-        if "drop_db" in call.data:
+        if "delete_trgt_chnl" in call.data:
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=call.message.chat.id
             )
             account_name = call.data.split("#")[-1]
             account_context.updateAccountName(
-                chat_id=call.message.chat.id,
-                account_name=account_name
+                chat_id=call.message.chat.id, account_name=account_name
             )
-            await _deleteDb(message=call.message)
+            await _sendDeleteTargetChatText(message=call.message)
         
         if "stories_service" in call.data:
             await message_context_manager.delete_msgId_from_help_menu_dict(
@@ -166,18 +205,69 @@ class Bot:
             )
             account_name = call.data.split("#")[-1]
             account_context.updateAccountName(
-                chat_id=call.message.chat.id,
-                account_name=account_name
+                chat_id=call.message.chat.id, account_name=account_name
             )
-            await _startStories(message=call.message)
+  
+            await _launchStories(message=call.message)
+        
+        if "aiosheduler_stories" in call.data or "back_to_aiosheduler_stories" in call.data:
+            await bot.delete_state(
+                user_id=call.message.chat.id, chat_id=call.message.chat.id
+            )
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+  
+            await _aioschedulerStoriesMenu(message=call.message)
 
+        if "chng_delay" in call.data:
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+  
+            await _setDelayForAioschedulerText(message=call.message)
+        
+        if "chng_status" in call.data:
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+            async with async_session() as session:
+                account_stories_dal = AccountStoriesDAL(session)
+                account = await account_stories_dal.getAccountBySessionName(
+                    session_name=account_name
+                )
+                if (account.target_channels == None):
+                    await _errorNoTargetChannels(call.message)
+                elif (len(account.target_channels) == 0):
+                    await _errorNoTargetChannels(call.message)
+                else:
+                    new_status = (False if account.aioscheduler_status else True)
+                    await account_stories_dal.updateStatus(
+                        session_name=account_name,
+                        new_status=new_status
+                    )
+    
+                    await _changeStatusForAioscheduler(message=call.message, status=new_status)
 
         # -------editing visual account config-------
     
         if "chng_first_name" in call.data:
-            await message_context_manager.delete_msgId_from_help_menu_dict(
-                chat_id=call.message.chat.id
-            )
+            for msgId in message_context_manager.help_menu_msgId_to_delete[call.message.chat.id]:
+                await bot.delete_message(chat_id=call.message.chat.id, message_id=msgId)
+            message_context_manager.help_menu_msgId_to_delete[call.message.chat.id] = None
+
             account_name = call.data.split("#")[-1]
             account_context.updateAccountName(
                 chat_id=call.message.chat.id,
@@ -186,9 +276,10 @@ class Bot:
             await _sendChangeFirstNameText(message=call.message)
 
         if "chng_last_name" in call.data:
-            await message_context_manager.delete_msgId_from_help_menu_dict(
-                chat_id=call.message.chat.id
-            )
+            for msgId in message_context_manager.help_menu_msgId_to_delete[call.message.chat.id]:
+                await bot.delete_message(chat_id=call.message.chat.id, message_id=msgId)
+            message_context_manager.help_menu_msgId_to_delete[call.message.chat.id] = None
+
             account_name = call.data.split("#")[-1]
             account_context.updateAccountName(
                 chat_id=call.message.chat.id,
@@ -197,9 +288,10 @@ class Bot:
             await _sendChangeLastNameText(message=call.message)        
         
         if "chng_username" in call.data:
-            await message_context_manager.delete_msgId_from_help_menu_dict(
-                chat_id=call.message.chat.id
-            )
+            for msgId in message_context_manager.help_menu_msgId_to_delete[call.message.chat.id]:
+                await bot.delete_message(chat_id=call.message.chat.id, message_id=msgId)
+            message_context_manager.help_menu_msgId_to_delete[call.message.chat.id] = None
+
             account_name = call.data.split("#")[-1]
             account_context.updateAccountName(
                 chat_id=call.message.chat.id,
@@ -208,15 +300,28 @@ class Bot:
             await _sendChangeUsernameText(message=call.message)   
         
         if "chng_pfp" in call.data:
-            await message_context_manager.delete_msgId_from_help_menu_dict(
-                chat_id=call.message.chat.id
-            )
+            for msgId in message_context_manager.help_menu_msgId_to_delete[call.message.chat.id]:
+                await bot.delete_message(chat_id=call.message.chat.id, message_id=msgId)
+            message_context_manager.help_menu_msgId_to_delete[call.message.chat.id] = None
+
             account_name = call.data.split("#")[-1]
             account_context.updateAccountName(
                 chat_id=call.message.chat.id,
                 account_name=account_name
             )
             await _sendChangeProfilePictureText(message=call.message)   
+        
+        if "chng_profile_desc" in call.data:
+            for msgId in message_context_manager.help_menu_msgId_to_delete[call.message.chat.id]:
+                await bot.delete_message(chat_id=call.message.chat.id, message_id=msgId)
+            message_context_manager.help_menu_msgId_to_delete[call.message.chat.id] = None
+
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id,
+                account_name=account_name
+            )
+            await _sendChangeAccountDescriptionText(message=call.message)   
 
         # ---------------bot editing-----------------
             
@@ -233,6 +338,13 @@ class Bot:
                 chat_id=call.message.chat.id, account_name=account_name
             )
             await _sendChangePromptText(call.message)
+
+        if "change_delay" in call.data:
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+            await _sendChangeDelayText(call.message)
 
         if "add_adv_chat" in call.data:
             account_name = call.data.split("#")[-1]
@@ -312,30 +424,182 @@ class Bot:
                 chat_id=call.message.chat.id
             )
             await _spamInst(message=call.message)
-        
-        if call.data == "new_inst_account_menu" or call.data == "back_to_new_inst_account_menu":
-            await message_context_manager.delete_msgId_from_help_menu_dict(
-                chat_id=call.message.chat.id
-            )
-            await _newAccountLoggingIn(message=call.message)
 
-        if call.data == "inst_acc_edit":
+        if call.data == "logging_in_inst" or call.data == "back_to_logging_in_inst":
+            await bot.delete_state(
+                user_id=call.message.chat.id, chat_id=call.message.chat.id
+            )
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=call.message.chat.id
             )
+            await _getInstAccountLogin(message=call.message)
+        
+        if call.data == "back_to_get_password":
+            await bot.delete_state(
+                user_id=call.message.chat.id, chat_id=call.message.chat.id
+            )
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            await _getInstAccountPassword(message=call.message)
+        
+        if call.data == "back_to_get_proxy":
+            await bot.delete_state(
+                user_id=call.message.chat.id, chat_id=call.message.chat.id
+            )
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            await _getProxyAddress(message=call.message)
+        
+        if call.data == "inst_acc_edit" or call.data == "back_to_inst_acc_edit":
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+
             await _editAccountsInstMenu(message=call.message)
 
-        if call.data == "logging_in_inst":
+        if "edit_inst_account" in call.data or "back_to_edit_inst_account" in call.data:
+            await bot.delete_state(
+                user_id=call.message.chat.id, chat_id=call.message.chat.id
+            )
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=call.message.chat.id
             )
-            await _newAccountLoggingInManuallyText(message=call.message)
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
 
-        if call.data == "logging_in_inst_by_cookies":
+            await _showAccountInstActions(message=call.message, account_name=account_name)
+        
+        if "change_acc_inst_msg" in call.data:
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=call.message.chat.id
             )
-            await _newAccountLoggingInCookies(message=call.message)
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+
+            await _sendUpdateMessageText(message=call.message)
+
+        if "add_target_chat" in call.data:
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+
+            await _sendAddTargetChannelText(message=call.message)
+        
+        if "remove_target_chat" in call.data:
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+
+            await _sendRemoveTargetChannelText(message=call.message)
+        
+        if "delete_inst_account" in call.data:
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+
+            await _sendDeleteAccountInstText(message=call.message)
+        
+        if "chng_inst_status" in call.data:
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+            async with async_session() as session:
+                account_inst_dal = AccountInstDAL(session)
+                proxy_dal = ProxyAddressDAL(session)
+                account = await account_inst_dal.getAccountBySessionName(
+                    session_name=account_name
+                )
+                proxies = await proxy_dal.getProxyAddressById(
+                    account_inst_id=account.id
+                )
+                amount_of_proxies = len(proxies)
+                if (amount_of_proxies < REDQUIRED_AMOUNT_OF_PROXIES):
+                    await _errorInsufficientAmountOfProxies(call.message, amount_of_proxies)
+                elif (account.target_channels == None):
+                    await _errorNoTargetInstChannels(call.message)
+                elif (len(account.target_channels) == 0):
+                    await _errorNoTargetInstChannels(call.message)
+                elif (account.message == "Не указано" and account.reels_link == "Не указана"):
+                    await _errorNoMessageAndNoReels(call.message)
+                else:
+                    new_status = (False if account.status else True)
+                    await account_inst_dal.updateStatus(
+                        session_name=account_name,
+                        new_status=new_status
+                    )
+                    await _changeStatusAccountInst(message=call.message, status=new_status)
+        
+        if "add_proxy" in call.data:
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+
+            await _sendAddProxyText(message=call.message)
+        
+        if "delete_proxy" in call.data:
+            await bot.delete_state(
+                user_id=call.message.chat.id, chat_id=call.message.chat.id
+            )
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+
+            await _sendDeleteProxyText(message=call.message)
+        
+        if "chng_inst_delay" in call.data:
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+  
+            await _setDelayForInstText(message=call.message)
+        
+        if "add_reels_link" in call.data:
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=call.message.chat.id
+            )
+            account_name = call.data.split("#")[-1]
+            account_context.updateAccountName(
+                chat_id=call.message.chat.id, account_name=account_name
+            )
+  
+            await _updateReelsLinkText(message=call.message)
+        
+
+        
 
             
     @staticmethod

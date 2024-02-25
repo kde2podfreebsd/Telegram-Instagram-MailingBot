@@ -23,6 +23,7 @@ class EditAccountVisCfgActionStates(StatesGroup):
     EditLastName = State()
     EditUsername = State()
     EditPhoto = State()
+    EditAccountDescription = State()
 
 
 async def _sendChangeFirstNameText(message):
@@ -213,7 +214,7 @@ async def _sendChangeProfilePictureText(message):
         reply_markup=MarkupBuilder.back_to_vis_cfg_menu(account_name=account_name),
         parse_mode="HTML"
     )
-
+    
     await message_context_manager.add_msgId_to_help_menu_dict(
         chat_id=message.chat.id, 
         msgId=msg.message_id
@@ -265,7 +266,46 @@ async def edit_pfp(message):
         msgId=msg.message_id
     )
     
+async def _sendChangeAccountDescriptionText(message):
+    chat_id = message.chat.id
+
+    account_name = account_context.account_name[chat_id]
+    msg = await bot.send_message(
+        message.chat.id,
+        MarkupBuilder.changeProfileDescriptionText,
+        reply_markup=MarkupBuilder.back_to_vis_cfg_menu(account_name=account_name),
+        parse_mode="HTML"
+    )
+
+    await message_context_manager.add_msgId_to_help_menu_dict(
+        chat_id=message.chat.id, 
+        msgId=msg.message_id
+    )
+    await bot.set_state(message.chat.id, EditAccountVisCfgActionStates.EditAccountDescription)
+
+@bot.message_handler(state=EditAccountVisCfgActionStates.EditAccountDescription)
+async def edit_account_description(message):
+    chat_id=message.chat.id
+    await message_context_manager.delete_msgId_from_help_menu_dict(
+        chat_id=chat_id
+    )
+    account_name = account_context.account_name[chat_id] 
+    new_account_description = message.text
     
+    account = UserAgentCore(account_name)  
+    await account.changeProfileDescription(new_account_description)
+
+    msg = await bot.send_message(
+        message.chat.id,
+        MarkupBuilder.profileDescriptionChangedText,
+        reply_markup=MarkupBuilder.back_to_vis_cfg_menu(account_name=account_name),
+        parse_mode="HTML"
+    )
+
+    await message_context_manager.add_msgId_to_help_menu_dict(
+        chat_id=message.chat.id, 
+        msgId=msg.message_id
+    )
 
     
     
