@@ -5,6 +5,7 @@ import aioschedule
 from App.Database.DAL.AccountStoriesDAL import AccountStoriesDAL
 from App.Database.session import async_session
 from App.UserAgent.Core.UserAgentCore import UserAgentCore
+from App.Config import UPDATE_DB_DELAY
 
 jobs = []
 
@@ -15,7 +16,7 @@ async def mainLayer():
         await update_premium_members_db(
             account_stories_dal=account_stories_dal
         )
-        aioschedule.every().day.do(update_premium_members_db, account_stories_dal)
+        aioschedule.every(UPDATE_DB_DELAY).minutes.do(update_premium_members_db, account_stories_dal)
 
         global accounts_session_names_prev_state
         accounts_session_names_prev_state = await update_session_name_with_true_status(
@@ -35,7 +36,6 @@ async def spam_plugin_thread(account_stories_dal: AccountStoriesDAL):
     # delete job if the account's status has been changed from True to False
     for job in aioschedule.jobs:
         tag = list(job.tags)
-        print(tag)
         if (tag not in accounts_session_names and tag != []):
             jobs.remove(
                 find_client_and_delay_by_client_name(
@@ -83,10 +83,6 @@ async def update_session_name_with_true_status(account_stories_dal: AccountStori
 async def update_premium_members_db(account_stories_dal: AccountStoriesDAL):
     global premium_members_db
     premium_members_db = await account_stories_dal.getAllChatMembers()
-
-    # нужно подумать над этим 
-    # for job in aioschedule.jobs:
-    #     aioschedule.cancel_job(job)
 
 def find_client_and_delay_by_client_name(client_name: str):
     result = None

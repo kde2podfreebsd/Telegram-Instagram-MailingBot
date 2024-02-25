@@ -467,34 +467,40 @@ async def _errorInsufficientAmountOfProxies(message, amount_of_proxies):
         chat_id=message.chat.id, msgId=msg.message_id
     )
 
-async def _changeStatusAccountInst(message, status):
-    async with async_session() as session:
-        account_stories_dal = AccountInstDAL(session)
-        result = await account_stories_dal.getAccountBySessionName(
-            session_name=account_context.account_name[message.chat.id]
-        )
-        if (result.target_channels == None):
-            await _errorNoTargetInstChannels(message)
-        elif (len(result.target_channels) == 0):
-            await _errorNoTargetInstChannels(message)
-        elif (result.message == "Не указано"):
-            await _errorNoMessage(message)
-        else:
-            msg = await bot.send_message(
-                message.chat.id,
-                MarkupBuilder.changeStatusAccountInst(
-                    status=status
-                ),
-                reply_markup=MarkupBuilder.back_to_edit_inst_account(
-                    account_name = account_context.account_name[message.chat.id]
-                ),
-                parse_mode="HTML"
-            )
+async def _errorNoMessageAndNoReels(message):
+    await message_context_manager.delete_msgId_from_help_menu_dict(
+        chat_id=message.chat.id
+    )
 
-            await message_context_manager.add_msgId_to_help_menu_dict(
-                chat_id=message.chat.id, 
-                msgId=msg.message_id
-            )
+    msg = await bot.send_message(
+        message.chat.id,
+        MarkupBuilder.errorNoMessageAndNoReels,
+        reply_markup=MarkupBuilder.back_to_edit_inst_account(
+            account_name=account_context.account_name[message.chat.id]
+        ),
+        parse_mode="HTML",
+    )
+    await message_context_manager.add_msgId_to_help_menu_dict(
+        chat_id=message.chat.id, msgId=msg.message_id
+    )
+
+async def _changeStatusAccountInst(message, status):
+    
+    msg = await bot.send_message(
+        message.chat.id,
+        MarkupBuilder.changeStatusAccountInst(
+            status=status
+        ),
+        reply_markup=MarkupBuilder.back_to_edit_inst_account(
+            account_name = account_context.account_name[message.chat.id]
+        ),
+        parse_mode="HTML"
+    )
+
+    await message_context_manager.add_msgId_to_help_menu_dict(
+        chat_id=message.chat.id, 
+        msgId=msg.message_id
+    )
 
 async def _errorProxyAddress(message):
     await message_context_manager.delete_msgId_from_help_menu_dict(
@@ -558,7 +564,7 @@ async def _errorExpiredProxyDb(message):
     msg = await bot.send_message(
         message.chat.id,
         text=MarkupBuilder.errorExpiredProxyDb,
-        reply_markup=MarkupBuilder.back_to_spam_inst(),
+        reply_markup=MarkupBuilder.back_to_edit_inst_account(),
         parse_mode="HTML",
     )
 
@@ -591,9 +597,13 @@ async def _addProxy(message):
                     MarkupBuilder.addingProxy,
                     parse_mode="HTML"
                 )
-                is_valid = await instagramParser.async_check_proxy()
+                
+                is_proxy_connection_failed = str(await instagramParser.async_check_proxy())
+                proxy_connection_failed = str(InstagramParserExceptions().ProxyConnectionFailed)
+
                 await bot.delete_message(message.chat.id, msg_filler.id)
-                if (is_valid):
+
+                if (proxy_connection_failed not in is_proxy_connection_failed):
                     proxy_dal = ProxyAddressDAL(session)
                     result = await proxy_dal.createProxyAddress(address=message.text, account_inst_id=account.id)
                     if (result is not None):
@@ -608,7 +618,7 @@ async def _addProxy(message):
                         await message_context_manager.add_msgId_to_help_menu_dict(
                             chat_id=message.chat.id, msgId=msg.message_id
                         )
-                        await bot.set_state(message.chat.id, EditAccountInstActionStates.AddProxy)
+                        
                     else:
                         await _errorProxyAddress(message)
                 else:
@@ -702,7 +712,7 @@ async def _deleteProxy(message):
                     await message_context_manager.add_msgId_to_help_menu_dict(
                         chat_id=message.chat.id, msgId=msg.message_id
                     )
-                    await bot.set_state(message.chat.id, EditAccountInstActionStates.AddProxy)
+                    
                 else:
                     await _errorProxyAddressRemoval(message)
         else:

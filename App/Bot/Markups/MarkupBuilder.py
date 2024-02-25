@@ -925,6 +925,12 @@ class MarkupBuilder(object):
         return cls.errorNoTargetInstChannels
     
     @classmethod
+    @property
+    def errorNoMessageAndNoReels(cls):
+        cls.errorNoMessageAndNoReels = "<b>❌Нет ни сообщения, ни ссылки на рилз для рассылки. Добавьте из с помощью \"💬Изменить сообщение\" или \"▶️Добавить ссылку на рилз\"</b>"
+        return cls.errorNoMessageAndNoReels
+
+    @classmethod
     def errorInsufficientAmountOfProxies(cls, amount_of_proxies: int):
         cls._error_insufficient_amount_of_proxies = f"""<b>❌Необходимо иметь следующее количество прокси для спам-рассылки: {REDQUIRED_AMOUNT_OF_PROXIES}.
         \nСейчас {amount_of_proxies}/{REDQUIRED_AMOUNT_OF_PROXIES}, добавьте еще с помощью \"➕Добавить прокси\"</b>"""
@@ -986,8 +992,8 @@ class MarkupBuilder(object):
     @classmethod
     @property
     def deletedProxyAddress(cls):
-        cls.deleteProxyAddress = "✅<b>Адрес прокси был успешно удален из базы данных</b>"
-        return cls.deleteProxyAddress
+        cls.deletedProxyAddress = "✅<b>Адрес прокси был успешно удален из базы данных</b>"
+        return cls.deletedProxyAddress
 
     @classmethod
     @property
