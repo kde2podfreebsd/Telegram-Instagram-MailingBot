@@ -1273,6 +1273,18 @@ profile picture: {"" if isProfilePicture else "None"}
         )
 
 
+    @classmethod 
+    def back_to_acc_edit(cls):
+        return types.InlineKeyboardMarkup(
+            row_width=1,
+            keyboard=[
+                [
+                    types.InlineKeyboardButton(
+                        text="🔙Назад", callback_data="back_to_acc_edit"
+                    )
+                ]
+            ],
+        )
 
     @classmethod
     def back_to_spam_tg(cls):

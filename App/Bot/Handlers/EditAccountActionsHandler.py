@@ -525,9 +525,7 @@ async def delete_account(message):
             msg = await bot.send_message(
                 chat_id=message.chat.id,
                 text=MarkupBuilder.account_deleted,
-                reply_markup=MarkupBuilder.back_to_edit_menu(
-                    account_name=account_context.account_name[message.chat.id]
-                ),
+                reply_markup=MarkupBuilder.back_to_acc_edit(),
                 parse_mode="HTML",
             )
             await message_context_manager.add_msgId_to_help_menu_dict(
