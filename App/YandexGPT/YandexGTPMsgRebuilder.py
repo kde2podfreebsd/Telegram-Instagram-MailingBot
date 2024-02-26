@@ -33,7 +33,7 @@ class YandexGPTMessageRebuilder:
     _payload: dict[str: str] = None
     _response: json = None
 
-    async def sync_prompt(cls, account_name: str, prompt: str) -> str:
+    async def rewrite_message(cls, account_name: str, prompt: str) -> str:
         chat_history_file = Path(f"{basedir}/YandexGPT/json_history/{account_name}_history.json")
         if chat_history_file.exists():
             with open(chat_history_file, "r", encoding="utf-8") as file:
@@ -58,6 +58,8 @@ class YandexGPTMessageRebuilder:
             cls._response = requests.post(cls._url, headers=cls._headers, json=cls._payload)
             result = cls._response.json()
         except Exception:
+            print("ENTERED")
+            cls._payload["messages"].append({"role": "system", "text": "Проверь правильность разметки markdown для телеграма"})
             cls._response = requests.post(cls._url, headers=cls._headers, json=cls._payload)
             result = cls._response.json()
 
@@ -70,7 +72,7 @@ class YandexGPTMessageRebuilder:
         return assistant_response['text']
 
 async def main():
-    account_name = "lol"
+    account_name = "kek"
     user_prompt_text = f"""
 Переформулируй и дополни рекламное сообщение.
 Не убирай @complicat9d из сообщения - это ссылка на рекламируемый чат. Если его нет, то обязательно добавь в конец сообщения.
@@ -78,7 +80,7 @@ async def main():
 Вот описание канала, оно поможет для переформулировки и дополнения рекламного сообщения: канал по криптоивестингу с свежими прогнозами.
 Вот сообщение для редактирования: Самый лучший канал по криптоивестингу, вступай в наш чат @complicat9d
 """
-    response = await YandexGPTMessageRebuilder.sync_prompt(YandexGPTMessageRebuilder, account_name=account_name, prompt=user_prompt_text)
+    response = await YandexGPTMessageRebuilder.rewrite_message(YandexGPTMessageRebuilder, account_name=account_name, prompt=user_prompt_text)
     print(response)
 
 if __name__ == "__main__":

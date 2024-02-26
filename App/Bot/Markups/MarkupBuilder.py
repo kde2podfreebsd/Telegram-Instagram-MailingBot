@@ -413,7 +413,7 @@ class MarkupBuilder(object):
                 ],
                 [
                     types.InlineKeyboardButton(
-                        text="✍️Изменить prompt для ChatGPT",
+                        text="✍️Изменить prompt для YandexGPT",
                         callback_data=f"change_prompt#{account_name}",
                     )
                 ],
@@ -1187,9 +1187,21 @@ profile picture: {"" if isProfilePicture else "None"}
 
     @classmethod
     @property
+    def errorNotAllFieldsFilledForYandexGPT(cls):
+        cls.errorNotAllFieldsFilledForYandexGPT = "❌<b>Не все поля заполнены для перегенерации сообщения YandexGPT.\nПроверьте, что поля \"ChatGPT prompt\", \"Целевой канал\" и \"Рекламное сообщение\" заполнены.</b>"
+        return cls.errorNotAllFieldsFilledForYandexGPT
+
+    @classmethod
+    @property
     def errorSetTargetChannel(cls):
         cls._errorSetTargetChannel = "❌<b>Ошибка форматирования @username отправьте еще раз или вернитесь в главное меню</b>"
         return cls._errorSetTargetChannel
+    
+    @classmethod
+    @property
+    def errorNonExistentAdvChat(cls):
+        cls.errorNonExistentAdvChat = "<b>❌Вы пытаетесь удалить канал, который не существует в базе данных, попробуйте еще раз или вернитесь в меню настройки спам рассылки</b>"
+        return cls.errorNonExistentAdvChat
 
     @classmethod
     @property
@@ -1221,7 +1233,7 @@ profile picture: {"" if isProfilePicture else "None"}
 
     @classmethod
     @property
-    def ReloadedChatGPTMessageText(cls):
+    def ReloadedYandexGPTMessageText(cls):
         cls._ReloadedChatGPTMessageText = "✅<b>Рекламное сообщение обновлено</b>"
         return cls._ReloadedChatGPTMessageText
 
