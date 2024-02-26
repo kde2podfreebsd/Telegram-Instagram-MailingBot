@@ -173,7 +173,7 @@ class AccountInstDAL:
                 proxies = await proxy_dal.getProxyAddressById(account_inst_id=account_inst.id)
                 if proxies:
                     for proxy in proxies:
-                        proxy_dal.deleteProxyAddress(
+                        await proxy_dal.deleteProxyAddress(
                             address=proxy,
                             account_inst_id=account_inst.id
                         )
