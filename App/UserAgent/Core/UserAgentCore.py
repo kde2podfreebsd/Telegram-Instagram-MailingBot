@@ -207,14 +207,27 @@ class UserAgentCore:
     
     async def numberOfActiveStories(self, usernames):
         async with self.app as app:
-            max_ids = await app(functions.stories.GetPeerMaxIDsRequest(
-                id=usernames
-            ))
-            return len([number for number in max_ids if number != 0])
+            active_story_count = 0
+            chunk_size = 60
+            iter = 0
+            while(iter + chunk_size < len(usernames)):
+                chunk = usernames[iter:iter+chunk_size]
+
+                max_ids = await app(functions.stories.GetPeerMaxIDsRequest(
+                    id=chunk
+                ))
+                iter += chunk_size
+                active_story_count += sum(1 for number in max_ids if number != 0)
+                await asyncio.sleep(1)
+
+        return active_story_count
 
 async def main():
     x = UserAgentCore("test")
-    
+    result = await x.numberOfActiveStories(
+        usernames=["Sergey_Pushkarev"]
+    )
+    print(result)
 
 
 if __name__ == "__main__":
