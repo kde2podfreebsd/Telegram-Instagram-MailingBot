@@ -169,15 +169,14 @@ class UserAgentCore:
     @logger.exception_handler
     async def giveReaction(self, usernames):
         async with self.app as app:
-            max_ids = await app(functions.stories.GetPeerMaxIDsRequest(
-                id=usernames
-            ))
+
+            max_ids = await self.getAllPeerMaxIDsRequest(
+                usernames=usernames
+            )
             stories_watched = 0
-            # print([(i, j) for i, j in zip(max_ids, usernames)])
             for username, max_id in zip(usernames, max_ids):
                 if (max_id != 0):
                     stories_watched += 1
-                    # print(username, max_id)
                     await app(functions.stories.ReadStoriesRequest(
                         peer=username,
                         max_id=max_id
@@ -192,6 +191,30 @@ class UserAgentCore:
                     ))
                     logger.log_info(f"Reaction has been given to @{username}")
             return stories_watched
+        
+    async def getAllPeerMaxIDsRequest(self, usernames):
+        max_ids = []
+        chunk_size = 60
+        iter = 0
+        while(iter + chunk_size < len(usernames)):
+            chunk = usernames[iter:iter+chunk_size]
+
+            max_ids_chunk = await self.app(functions.stories.GetPeerMaxIDsRequest(
+                id=chunk
+            ))
+            max_ids.extend(max_ids_chunk)
+            iter += chunk_size
+            await asyncio.sleep(1)
+
+        chunk = usernames[iter:iter+chunk_size]
+        max_ids_chunk = await self.app(functions.stories.GetPeerMaxIDsRequest(
+            id=chunk
+        ))
+        max_ids.extend(max_ids_chunk)
+            
+        return max_ids
+            
+        
 
     async def isUserAuthorized(self):
         await self.app.connect()
@@ -216,9 +239,16 @@ class UserAgentCore:
                 max_ids = await app(functions.stories.GetPeerMaxIDsRequest(
                     id=chunk
                 ))
+                
                 iter += chunk_size
                 active_story_count += sum(1 for number in max_ids if number != 0)
                 await asyncio.sleep(1)
+
+            chunk = usernames[iter:]
+            max_ids = await app(functions.stories.GetPeerMaxIDsRequest(
+                id=chunk
+            ))
+            active_story_count += sum(1 for number in max_ids if number != 0)
 
         return active_story_count
 
