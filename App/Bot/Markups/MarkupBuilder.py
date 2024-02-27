@@ -1494,8 +1494,8 @@ profile picture: {"" if isProfilePicture else "None"}
     @classmethod
     @property
     def addedTargetChannelText(cls):
-        cls.errorIncorrectTargetChannel = "<b>✅Таргетный канал для прасинга был успешно добавлен в базу данных</b>"
-        return cls.errorIncorrectTargetChannel
+        cls.addedTargetChannelText = "<b>✅Таргетный канал для прасинга был успешно добавлен в базу данных</b>"
+        return cls.addedTargetChannelText
 
     @classmethod
     @property
