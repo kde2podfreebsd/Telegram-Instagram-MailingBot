@@ -181,10 +181,10 @@ async def edit_username(message):
             r'A wait of', 
             error_message
         )
-        if same_username_exception:
+        if username_taken_exception:
             logger.log_warning(f"The same username {new_username} has been inputted")
             await _errorUsernameTaken(message)
-        elif username_taken_exception:
+        elif same_username_exception:
             logger.log_error(f"Username {new_username} has already been occupied")
             await _errorSameUsername(message)
         elif floodwait_limitation:

@@ -564,7 +564,9 @@ async def _errorExpiredProxyDb(message):
     msg = await bot.send_message(
         message.chat.id,
         text=MarkupBuilder.errorExpiredProxyDb,
-        reply_markup=MarkupBuilder.back_to_edit_inst_account(),
+        reply_markup=MarkupBuilder.back_to_edit_inst_account(
+            account_name=account_context.account_name[message.chat.id]
+        ),
         parse_mode="HTML",
     )
 
