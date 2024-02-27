@@ -589,6 +589,10 @@ async def delete_account(message):
             await message_context_manager.add_msgId_to_help_menu_dict(
                 chat_id=message.chat.id, msgId=msg.id
             )
+            await bot.delete_state(
+                user_id=message.chat.id,
+                chat_id=message.chat.id
+            )
         else:
             await _errorDeleteAccountChat(message=message)
 
