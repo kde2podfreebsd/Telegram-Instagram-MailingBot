@@ -62,7 +62,7 @@ async def spam_thread(account_inst_dal: AccountInstDAL, proxy_dal: ProxyAddressD
                     parser_thread, 
                     account_name, 
                     account.message, 
-                    (None if account.reels_link == "Не указана" else account.reels_link),
+                    account.reels_link,
                     account.id, 
                     proxy_dal
                 )
@@ -74,7 +74,7 @@ async def spam_thread(account_inst_dal: AccountInstDAL, proxy_dal: ProxyAddressD
 async def parser_thread(
         account_name: str, 
         message: str, 
-        reels_link: str | None,
+        reels_link: str,
         id: int, 
         proxy_dal: ProxyAddressDAL
     ):
@@ -95,6 +95,7 @@ async def parser_thread(
                 instagramParser.async_send_message(message, reels_link, follower["username"])
             )
             tasks.append(task)
+            await asyncio.sleep(10)
     await asyncio.gather(*tasks)
 
 async def update_session_name_with_true_status(account_inst_dal: AccountInstDAL):

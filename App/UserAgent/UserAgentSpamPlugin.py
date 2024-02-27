@@ -39,7 +39,6 @@ async def mainLayer():
 
         aioschedule.every().minute.do(update_session_name_with_true_status, account_dal)
         aioschedule.every().minute.do(spam_plugin_thread, account_dal)
-
         while True:
             await aioschedule.run_pending()
             await asyncio.sleep(5)  
@@ -75,7 +74,7 @@ async def spam_plugin_thread(account_dal: AccountDAL):
                     client.session_name in accounts_session_names
                 ):
                 jobs.append([client.session_name, account.delay])
-                job = aioschedule.every(account.delay).seconds.do(
+                job = aioschedule.every(account.delay).minutes.do(
                     user_agent_thread, client, account.advertising_channels, message_tracker, account.message
                 )
                 job.tags.add(f"{client.session_name}")         
