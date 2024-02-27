@@ -449,7 +449,7 @@ class MarkupBuilder(object):
                 ],
                 [
                     types.InlineKeyboardButton(
-                        text="🔄Обновить рекламное сообщение ChatGPT",
+                        text="🔄Обновить рекламное сообщение YandexGPT",
                         callback_data=f"reload_chatgpt_message#{account_name}",
                     )
                 ],
@@ -508,7 +508,7 @@ class MarkupBuilder(object):
 🎯Целевой канал: {target_chat}
 🆙Статус: {"Активен" if account.status else "Не активен"}
 ⏰Задержка в минутах: {account.delay}
-✍️ChatGPT prompt:
+✍️YandexGPT prompt:
 -------------------
 {prompt}
 -------------------
@@ -779,6 +779,12 @@ class MarkupBuilder(object):
         cls.errorExpiredProxy = "❌<b>У введенного прокси адреса закончился срок годности, перейдите в меню рассылки инстаграм, чтобы повторить лоигн в аккаунт</b>"
         return cls.errorExpiredProxy
     
+    @classmethod
+    @property
+    def errorCaptchaVerification(cls):
+        cls.errorCaptchaVerification = "❌<b>Для входа в этот аккаунт требуется верификация с помощью капчи, попробуйте использовать другой аккаунт.</b>"
+        return cls.errorCaptchaVerification
+
     @classmethod
     @property
     def errorExpiredProxyDb(cls):
@@ -1132,14 +1138,14 @@ profile picture: {"" if isProfilePicture else "None"}
     @classmethod
     @property
     def sendChangeAccountMessageText(cls):
-        cls._sendChangeAccountMessageText = "💬<b>Укажите рекламное сообщение в MARKDOWN разметке, которое будет базой для перегенерации ChatGPT</b>"
+        cls._sendChangeAccountMessageText = "💬<b>Укажите рекламное сообщение в MARKDOWN разметке, которое будет базой для перегенерации YandexGPT</b>"
         return cls._sendChangeAccountMessageText
 
     @classmethod
     @property
     def sendChangePromptText(cls):
         cls._sendChangePromptText = (
-            "✍️<b>Укажите подробное описание канала, для prompt ChatGPT</b>"
+            "✍️<b>Укажите подробное описание канала, для prompt YandexGPT</b>"
         )
         return cls._sendChangePromptText
 
@@ -1164,7 +1170,7 @@ profile picture: {"" if isProfilePicture else "None"}
     @classmethod
     @property
     def sendChangePromptText(cls):
-        cls._sendChangePromptText = "🎯<b>Укажите @username целевого канала.</b>\n<i>Этот @username будет подставляться в рекламное сообщение и prompt для ChatGPT</i>"
+        cls._sendChangePromptText = "🎯<b>Укажите @username целевого канала.</b>\n<i>Этот @username будет подставляться в рекламное сообщение и prompt для YandexGPT</i>"
         return cls._sendChangePromptText
     
     @classmethod
@@ -1188,7 +1194,7 @@ profile picture: {"" if isProfilePicture else "None"}
     @classmethod
     @property
     def errorNotAllFieldsFilledForYandexGPT(cls):
-        cls.errorNotAllFieldsFilledForYandexGPT = "❌<b>Не все поля заполнены для перегенерации сообщения YandexGPT.\nПроверьте, что поля \"ChatGPT prompt\", \"Целевой канал\" и \"Рекламное сообщение\" заполнены.</b>"
+        cls.errorNotAllFieldsFilledForYandexGPT = "❌<b>Не все поля заполнены для перегенерации сообщения YandexGPT.\nПроверьте, что поля \"YandexGPT prompt\", \"Целевой канал\" и \"Рекламное сообщение\" заполнены.</b>"
         return cls.errorNotAllFieldsFilledForYandexGPT
 
     @classmethod
@@ -1234,8 +1240,8 @@ profile picture: {"" if isProfilePicture else "None"}
     @classmethod
     @property
     def ReloadedYandexGPTMessageText(cls):
-        cls._ReloadedChatGPTMessageText = "✅<b>Рекламное сообщение обновлено</b>"
-        return cls._ReloadedChatGPTMessageText
+        cls.ReloadedYandexGPTMessageText = "✅<b>Рекламное сообщение обновлено</b>"
+        return cls.ReloadedYandexGPTMessageText
 
     @classmethod
     @property

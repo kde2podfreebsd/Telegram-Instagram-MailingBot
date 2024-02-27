@@ -225,7 +225,7 @@ async def _addTargetInstChannel(message):
             )
             if (str(result) == str(instagramParserExceptions.PageNotFound)):
                 await _errorPageNotFound(message)
-            elif (result):
+            elif (result and result != []):
                 msg = await bot.send_message(
                     message.chat.id,
                     MarkupBuilder.addedInstTargetChannel,

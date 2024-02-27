@@ -102,7 +102,7 @@ class AccountInstDAL:
                             )
                     else:
                         logger.log_error(f"An error occured while parsing {target_channel}'s followers: either followers are private or selenium didn't parse website properly")
-                        return followers
+                        return False
                 else:
                     logger.log_warning(f"{target_channel} already exists in {session_name}'s target channels")
                     return "Target channel already exists in data base"
