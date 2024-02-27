@@ -99,9 +99,9 @@ class InstagramParser(Parser):
                 logger.log_error(f"Account {self.login} has been banned")
                 raise instagramExceptions.SuspendedAccount
             
-            # if ("challenge" in current_url):
-            #     logger.log_error(f"Captcha verification is required for {self.login} to login in")
-            #     raise instagramExceptions.CaptchaVerification         
+            if ("challenge" in current_url):
+                logger.log_error(f"Captcha verification is required for {self.login} to login in")
+                raise instagramExceptions.CaptchaVerification         
             
             try:
                 wait.until(EC.visibility_of_element_located((By.XPATH, PROBLEM_WITH_LOGGING_IN_XPATH)))
