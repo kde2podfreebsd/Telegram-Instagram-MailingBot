@@ -1584,8 +1584,8 @@ profile picture: {"" if isProfilePicture else "None"}
     @classmethod
     @property
     def errorUsernameTaken(cls):
-        cls.errorEditUsername = "<b>❌ Username, который вы ввели, уже занят другим пользователем. Введите его еще раз или вернитесь в меню редактирования визуального конфига</b>"
-        return cls.errorEditUsername
+        cls.errorUsernameTaken = "<b>❌ Username, который вы ввели, уже занят другим пользователем. Введите его еще раз или вернитесь в меню редактирования визуального конфига</b>"
+        return cls.errorUsernameTaken
     
     @classmethod
     def errorUsernameFloodWait(cls, time_left):
@@ -1595,8 +1595,8 @@ profile picture: {"" if isProfilePicture else "None"}
     @classmethod
     @property
     def errorSameUsername(cls):
-        cls.errorEditUsername = "<b>❌ Username, который вы ввели, не отличается от текущего. Введите его еще раз или вернитесь в меню редактирования визуального конфига</b>"
-        return cls.errorEditUsername
+        cls.errorSameUsername = "<b>❌ Username, который вы ввели, не отличается от текущего. Введите его еще раз или вернитесь в меню редактирования визуального конфига</b>"
+        return cls.errorSameUsername
     
     @classmethod
     @property

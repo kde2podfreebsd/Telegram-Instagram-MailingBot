@@ -106,7 +106,7 @@ async def _errorUsernameTaken(message):
     account_name = account_context.account_name[chat_id]
     msg = await bot.send_message(
         message.chat.id,
-        MarkupBuilder.errorSameUsername,
+        MarkupBuilder.errorUsernameTaken,
         reply_markup=MarkupBuilder.back_to_vis_cfg_menu(account_name=account_name),
         parse_mode="HTML"
     )
@@ -125,7 +125,7 @@ async def _errorSameUsername(message):
     account_name = account_context.account_name[chat_id]
     msg = await bot.send_message(
         message.chat.id,
-        MarkupBuilder.errorUsernameTaken,
+        MarkupBuilder.errorSameUsername,
         reply_markup=MarkupBuilder.back_to_vis_cfg_menu(account_name=account_name),
         parse_mode="HTML"
     )
