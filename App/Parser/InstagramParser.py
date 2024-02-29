@@ -180,7 +180,7 @@ class InstagramParser(Parser):
         result = await loop.run_in_executor(None, partial_send_message)
         return result
 
-    def send_message(self, message: str, reels_link: str | None, channel: str):
+    def send_message(self, message: str, reels_link: str, channel: str):
         try:
             wait = WebDriverWait(self.driver, 15)
 
@@ -217,18 +217,10 @@ class InstagramParser(Parser):
             return None
         finally:
             self.close_parser()
-    
-    async def async_send_reels(self, reels_link: str, message: str, channel: str):
-        loop = asyncio.get_event_loop()
-        partial_send_reels = functools.partial(self.send_reels, reels_link, message, channel)
-        result = await loop.run_in_executor(None, partial_send_reels)
-        return result
 
     def dump_cookies(self):
         cookies = self.driver.get_cookies()
         pickle.dump(cookies, open(f"{inst_sessions_dirPath}/{self.login}.cookies", "wb"))
-        
-            
         
     def load_cookies(self):
         try:
