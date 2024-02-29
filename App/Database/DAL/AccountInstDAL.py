@@ -102,7 +102,7 @@ class AccountInstDAL:
                             )
                     else:
                         logger.log_error(f"An error occured while parsing {target_channel}'s followers: either followers are private or selenium didn't parse website properly")
-                        return followers
+                        return False
                 else:
                     logger.log_warning(f"{target_channel} already exists in {session_name}'s target channels")
                     return "Target channel already exists in data base"
@@ -173,7 +173,7 @@ class AccountInstDAL:
                 proxies = await proxy_dal.getProxyAddressById(account_inst_id=account_inst.id)
                 if proxies:
                     for proxy in proxies:
-                        proxy_dal.deleteProxyAddress(
+                        await proxy_dal.deleteProxyAddress(
                             address=proxy,
                             account_inst_id=account_inst.id
                         )

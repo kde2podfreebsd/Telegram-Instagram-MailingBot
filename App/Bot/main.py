@@ -11,7 +11,7 @@ from App.Bot.Handlers.EditAccountActionsHandler import _sendChangePromptText
 from App.Bot.Handlers.EditAccountActionsHandler import _sendChangeStatusMenu
 from App.Bot.Handlers.EditAccountActionsHandler import _sendChangeTargetChannelText
 from App.Bot.Handlers.EditAccountActionsHandler import _sendDeleteAccountText
-from App.Bot.Handlers.EditAccountActionsHandler import _sendReloadChatGPTMessageText
+from App.Bot.Handlers.EditAccountActionsHandler import _sendReloadYandexGPTMessageText
 from App.Bot.Handlers.EditAccountActionsHandler import _sendRemoveAdvChatText
 from App.Bot.Handlers.EditAccountActionsHandler import _set_status_off
 from App.Bot.Handlers.EditAccountActionsHandler import _set_status_on
@@ -113,6 +113,7 @@ class Bot:
             await _spamTg(message=call.message)
         
         if call.data == "acc_edit" or call.data == "back_to_acc_edit":
+            
             await message_context_manager.delete_msgId_from_help_menu_dict(
                 chat_id=call.message.chat.id
             )
@@ -383,7 +384,7 @@ class Bot:
                 chat_id=call.message.chat.id, account_name=account_name
             )
 
-            await _sendReloadChatGPTMessageText(call.message)
+            await _sendReloadYandexGPTMessageText(call.message)
 
         if "delete_account" in call.data:
             account_name = call.data.split("#")[-1]

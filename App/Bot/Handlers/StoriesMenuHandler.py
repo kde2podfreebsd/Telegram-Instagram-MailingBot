@@ -4,7 +4,20 @@ from App.Config import message_context_manager
 from App.Config import account_context
 
 async def _stories(message, account_name):
+    msg_filler = await bot.send_message(
+        message.chat.id,
+        "⚙️",
+        reply_markup=MarkupBuilder.hide_menu,
+        parse_mode="MarkdownV2",
+    )
+
     msg_list = await MarkupBuilder.showAccountStoriesActions(account_name=account_name)
+
+    await bot.delete_message(
+        chat_id=message.chat.id, 
+        message_id=msg_filler.id, 
+        timeout=0
+    )
 
     for x in range(len(msg_list)):
         if x + 1 == len(msg_list):

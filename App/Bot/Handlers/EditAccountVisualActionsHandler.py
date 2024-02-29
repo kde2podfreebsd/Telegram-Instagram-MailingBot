@@ -106,7 +106,7 @@ async def _errorUsernameTaken(message):
     account_name = account_context.account_name[chat_id]
     msg = await bot.send_message(
         message.chat.id,
-        MarkupBuilder.errorSameUsername,
+        MarkupBuilder.errorUsernameTaken,
         reply_markup=MarkupBuilder.back_to_vis_cfg_menu(account_name=account_name),
         parse_mode="HTML"
     )
@@ -125,7 +125,7 @@ async def _errorSameUsername(message):
     account_name = account_context.account_name[chat_id]
     msg = await bot.send_message(
         message.chat.id,
-        MarkupBuilder.errorUsernameTaken,
+        MarkupBuilder.errorSameUsername,
         reply_markup=MarkupBuilder.back_to_vis_cfg_menu(account_name=account_name),
         parse_mode="HTML"
     )
@@ -181,10 +181,10 @@ async def edit_username(message):
             r'A wait of', 
             error_message
         )
-        if same_username_exception:
+        if username_taken_exception:
             logger.log_warning(f"The same username {new_username} has been inputted")
             await _errorUsernameTaken(message)
-        elif username_taken_exception:
+        elif same_username_exception:
             logger.log_error(f"Username {new_username} has already been occupied")
             await _errorSameUsername(message)
         elif floodwait_limitation:

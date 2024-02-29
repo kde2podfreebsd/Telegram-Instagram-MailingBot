@@ -30,6 +30,7 @@ class InstagramParserExceptions():
         self.SuspendedAccount = Exception("This instagram account has been suspended")
         self.PrivateAccount = Exception("Message cannot be sent to user, as they prhobited messaging them")
         self.ProxyConnectionFailed = Exception("unknown error: net::ERR_PROXY_CONNECTION_FAILED")
+        self.CaptchaVerification = Exception("Instagrram inquiring captcha verification on this account")
 
 
 class InstagramParser(Parser):
@@ -86,27 +87,33 @@ class InstagramParser(Parser):
             wait = WebDriverWait(self.driver, 15)
             cookies = wait.until(EC.element_to_be_clickable((By.XPATH, COOKIES_AGREEMENT_XPATH)))
             cookies.click()
+
             time.sleep(5)
             wait.until(EC.presence_of_element_located((By.XPATH, LOGIN_INPUT_XPATH))).send_keys(self.login) 
             wait.until(EC.presence_of_element_located((By.XPATH, PASSWORD_INPUT_XPATH))).send_keys(self.password)
             wait.until(EC.element_to_be_clickable((By.XPATH, LOGIN_BUTTON_XPATH))).click()
             time.sleep(10)
+
             current_url = self.driver.current_url
             if ("suspended" in current_url):
                 logger.log_error(f"Account {self.login} has been banned")
                 raise instagramExceptions.SuspendedAccount
             
+            if ("challenge" in current_url):
+                logger.log_error(f"Captcha verification is required for {self.login} to login in")
+                raise instagramExceptions.CaptchaVerification         
+            
             try:
                 wait.until(EC.visibility_of_element_located((By.XPATH, PROBLEM_WITH_LOGGING_IN_XPATH)))
             except Exception as e:
-                time.sleep(15)
-                self.dump_cookies()
-                logger.log_info(f"{self.login} account's cookies have been dumped successfully")
-                return None
+                pass
             else:
                 logger.log_error("Invalid login or password have been entered by the user for logging in")
                 raise instagramExceptions.IncorrectPasswordOrLogin
             
+            time.sleep(15)
+            self.dump_cookies()
+        
         except Exception as e:
             logger.log_error(f"An error occured while logging in user's instagram account: {e}")
             return e
@@ -167,12 +174,13 @@ class InstagramParser(Parser):
             curr_followers_count += step
 
     async def async_send_message(self, message: str, reels_link: str | None, channel: str):
+        await asyncio.sleep(5)
         loop = asyncio.get_event_loop()
         partial_send_message = functools.partial(self.send_message, message, reels_link, channel)
         result = await loop.run_in_executor(None, partial_send_message)
         return result
 
-    def send_message(self, message: str, reels_link: str | None, channel: str):
+    def send_message(self, message: str, reels_link: str, channel: str):
         try:
             wait = WebDriverWait(self.driver, 15)
 
@@ -196,12 +204,12 @@ class InstagramParser(Parser):
             wait.until(EC.element_to_be_clickable((By.XPATH, TURN_ON_NOTIFICATIONS_BUTTON_XPATH))).click()
             send_message_field = wait.until(EC.presence_of_element_located((By.XPATH, SEND_MESSAGE_FIELD_XPATH)))
 
-            if (reels_link is not None):
+            if (reels_link != "Не указана"):
                 send_message_field.send_keys(reels_link)
                 send_message_field.send_keys(Keys.ENTER)
-            
-            send_message_field.send_keys(message)
-            send_message_field.send_keys(Keys.ENTER)
+            if (message != "Не указано"):
+                send_message_field.send_keys(message)
+                send_message_field.send_keys(Keys.ENTER)
             time.sleep(5)
 
         except Exception as e:
@@ -209,24 +217,16 @@ class InstagramParser(Parser):
             return None
         finally:
             self.close_parser()
-    
-    async def async_send_reels(self, reels_link: str, message: str, channel: str):
-        loop = asyncio.get_event_loop()
-        partial_send_reels = functools.partial(self.send_reels, reels_link, message, channel)
-        result = await loop.run_in_executor(None, partial_send_reels)
-        return result
 
     def dump_cookies(self):
-        try:
-            cookies = self.driver.get_cookies()
-            pickle.dump(cookies, open(f"{inst_sessions_dirPath}/{self.login}.cookies", "wb"))
-        except Exception as e:
-            return e 
+        cookies = self.driver.get_cookies()
+        pickle.dump(cookies, open(f"{inst_sessions_dirPath}/{self.login}.cookies", "wb"))
         
     def load_cookies(self):
         try:
             cookies = pickle.load(open(f"{inst_sessions_dirPath}/{self.login}.cookies", "rb"))
             for cookie in cookies:
                 self.driver.add_cookie(cookie)
+            return None
         except Exception as e:
             return e

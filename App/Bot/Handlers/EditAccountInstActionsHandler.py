@@ -225,7 +225,7 @@ async def _addTargetInstChannel(message):
             )
             if (str(result) == str(instagramParserExceptions.PageNotFound)):
                 await _errorPageNotFound(message)
-            elif (result):
+            elif (result and result != []):
                 msg = await bot.send_message(
                     message.chat.id,
                     MarkupBuilder.addedInstTargetChannel,
@@ -409,6 +409,10 @@ async def deleteAccountInst(message):
                 await message_context_manager.add_msgId_to_help_menu_dict(
                     chat_id=message.chat.id, msgId=msg.message_id
                 )
+                await bot.delete_state(
+                    user_id=message.chat.id,
+                    chat_id=message.chat.id
+                )
             else:
                 await _errorDbAccountInstRemoval(message)
     else:
@@ -564,7 +568,9 @@ async def _errorExpiredProxyDb(message):
     msg = await bot.send_message(
         message.chat.id,
         text=MarkupBuilder.errorExpiredProxyDb,
-        reply_markup=MarkupBuilder.back_to_edit_inst_account(),
+        reply_markup=MarkupBuilder.back_to_edit_inst_account(
+            account_name=account_context.account_name[message.chat.id]
+        ),
         parse_mode="HTML",
     )
 
