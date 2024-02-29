@@ -45,11 +45,11 @@ async def _getInstAccountPassword(message):
     await message_context_manager.delete_msgId_from_help_menu_dict(
         chat_id=chat_id
     )
-
-    login_password_context.updateLogin(
-        chat_id=chat_id, 
-        login=message.text
-    )
+    if (message.text != "Введите адрес прокси сервера по образцу: IP_ADDRESS:PORT:LOGIN:PASSWORD"):
+        login_password_context.updateLogin(
+            chat_id=chat_id, 
+            login=message.text
+        )
     
     msg = await bot.send_message(
         message.chat.id,
@@ -170,6 +170,22 @@ async def _errorExpiredProxy(message):
         chat_id=message.chat.id, msgId=msg.message_id
     )
 
+async def _errorCaptchaVerification(message):
+    chat_id = message.chat.id
+    await message_context_manager.delete_msgId_from_help_menu_dict(
+        chat_id=chat_id
+    )
+    msg = await bot.send_message(
+        message.chat.id,
+        text=MarkupBuilder.errorCaptchaVerification,
+        reply_markup=MarkupBuilder.back_to_spam_inst(),
+        parse_mode="HTML",
+    )
+
+    await message_context_manager.add_msgId_to_help_menu_dict(
+        chat_id=message.chat.id, msgId=msg.message_id
+    )
+
 @bot.message_handler(state=NewAccountInstStates.LoggingIn)
 async def _newAccountLoggingIn(message):
     await bot.delete_state(message.chat.id, message.chat.id)
@@ -188,20 +204,19 @@ async def _newAccountLoggingIn(message):
             password=password,
             proxy=proxy
         )
-        is_valid = await instagramParser.async_check_proxy()
-        if is_valid:
-            msg_filler = await bot.send_message(
-                message.chat.id,
-                MarkupBuilder.loggingIn,
-                parse_mode="HTML"
-            )
 
-            exception = await instagramParser.async_logging_in()
+        msg_filler = await bot.send_message(
+            message.chat.id,
+            MarkupBuilder.loggingIn,
+            parse_mode="HTML"
+        )
 
+        exception = await instagramParser.async_logging_in()
+        if (str(instagramParserExceptions.ProxyConnectionFailed) not in str(exception)):
             await bot.delete_message(
-                    chat_id=message.chat.id, 
-                    message_id=msg_filler.id
-                )
+                chat_id=message.chat.id, 
+                message_id=msg_filler.id
+            )
             if exception == None:
                 msg = await bot.send_message(
                     message.chat.id,
@@ -221,6 +236,8 @@ async def _newAccountLoggingIn(message):
                 await _errorIncorrectPasswordOrLogin(message)
             elif str(exception) == str(instagramParserExceptions.SuspendedAccount):
                 await _errorSuspendedAccount(message)
+            elif str(exception) == str(instagramParserExceptions.CaptchaVerification):
+                await _errorCaptchaVerification(message)
             else:
                 await _errorLogginIn(message)
         else:

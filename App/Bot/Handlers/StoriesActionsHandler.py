@@ -159,9 +159,19 @@ async def _addTargetChat(message):
     if (re.match(pattern, channel_username)):
         async with async_session() as session:
             account_stories_dal = AccountStoriesDAL(session)
+            
+            msg_filler = await bot.send_message(
+                message.chat.id,
+                "<i>Происходит парсинг премиум пользователей телеграм канала, ожидайте...</i>",
+                parse_mode="HTML"
+            )
             result = await account_stories_dal.addTargetChannel(
                 username=channel_username,
                 session_name=account_context.account_name[message.chat.id]
+            )
+            await bot.delete_message(
+                chat_id=message.chat.id, 
+                message_id=msg_filler.id
             )
 
             if (db_exceptions.WRONG_USERNAME_EXCEPTION == result):
@@ -340,7 +350,20 @@ async def _launchStories(message):
             userAgent = UserAgentCore(
                 session_name=account_context.account_name[message.chat.id]
             )
+
+            msg_filler = await bot.send_message(
+                message.chat.id,
+                "<i>Происходит просмотр сториз, ожидайте...</i>",
+                parse_mode="HTML"
+            )
+
             stories_watched = await userAgent.giveReaction(usernames)
+
+            await bot.delete_message(
+                chat_id=message.chat.id,
+                message_id=msg_filler.id
+            )
+            
             msg = await bot.send_message(
                 message.chat.id,
                 MarkupBuilder.launchStoriesText(stories_watched),
@@ -352,7 +375,7 @@ async def _launchStories(message):
             await message_context_manager.add_msgId_to_help_menu_dict(
                 chat_id=message.chat.id, 
                 msgId=msg.message_id
-    )
+            )
 
 async def _setDelayForAioschedulerText(message):
     msg = await bot.send_message(

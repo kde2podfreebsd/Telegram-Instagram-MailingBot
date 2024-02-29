@@ -7,7 +7,7 @@ from telebot.asyncio_handler_backends import StatesGroup
 from App.Bot.Handlers.EditAccountsMenuHandler import _editAccountsMenu
 from App.Bot.Handlers.EditAccountsMenuHandler import _showAccountActions
 from App.Bot.Markups import MarkupBuilder
-from App.ChatGPT.ChatGTPMsgRebuilder import ChatGPTMessageRebuilder
+from App.YandexGPT.YandexGTPMsgRebuilder import YandexGPTMessageRebuilder
 from App.Config import account_context
 from App.Config import bot
 from App.Config import message_context_manager
@@ -385,6 +385,23 @@ async def _errorRemoveAdvChat(message):
     )
     await bot.set_state(message.chat.id, EditAccountActionStates.RemoveAdvChat)
 
+async def _errorNonExistentAdvChat(message):
+    await message_context_manager.delete_msgId_from_help_menu_dict(
+        chat_id=message.chat.id
+    )
+
+    msg = await bot.send_message(
+        message.chat.id,
+        MarkupBuilder.errorNonExistentAdvChat,
+        reply_markup=MarkupBuilder.back_to_edit_menu(
+            account_name=account_context.account_name[message.chat.id]
+        ),
+        parse_mode="HTML",
+    )
+    await message_context_manager.add_msgId_to_help_menu_dict(
+        chat_id=message.chat.id, msgId=msg.message_id
+    )
+    await bot.set_state(message.chat.id, EditAccountActionStates.RemoveAdvChat)
 
 @bot.message_handler(state=EditAccountActionStates.RemoveAdvChat)
 async def remove_adv_chat(message):
@@ -398,56 +415,40 @@ async def remove_adv_chat(message):
         pattern = r"^@[A-Za-z0-9]+(_[A-Za-z0-9]+)*$"
 
         if re.match(pattern, message.text):
-            await account_dal.removeAdvertisingChannel(
+            result = await account_dal.removeAdvertisingChannel(
                 session_name=account_context.account_name[message.chat.id],
                 channel_name=message.text,
             )
-            msg = await bot.send_message(
-                chat_id=message.chat.id,
-                text=MarkupBuilder.adv_chat_removed,
-                reply_markup=MarkupBuilder.back_to_edit_menu(
-                    account_name=account_context.account_name[message.chat.id]
-                ),
-                parse_mode="HTML",
-            )
-            
-            await message_context_manager.add_msgId_to_help_menu_dict(
-                chat_id=message.chat.id, msgId=msg.message_id
-            )
+            if (result):
+                msg = await bot.send_message(
+                    chat_id=message.chat.id,
+                    text=MarkupBuilder.adv_chat_removed,
+                    reply_markup=MarkupBuilder.back_to_edit_menu(
+                        account_name=account_context.account_name[message.chat.id]
+                    ),
+                    parse_mode="HTML",
+                )
+                
+                await message_context_manager.add_msgId_to_help_menu_dict(
+                    chat_id=message.chat.id, msgId=msg.message_id
+                )
+            else:
+                await _errorNonExistentAdvChat(message)
 
         else:
             await _errorRemoveAdvChat(message=message)
 
 
-# --------------Reload message by ChatGPT--------------
+# --------------Reload message by YandexGPT--------------
 
-
-async def _sendReloadChatGPTMessageText(message):
+async def _errorNotAllFieldsFilledForYandexGPT(message):
     await message_context_manager.delete_msgId_from_help_menu_dict(
         chat_id=message.chat.id
     )
 
     msg = await bot.send_message(
         message.chat.id,
-        "⏰<b>Ожидаем ответ от ChatGPT</b>",
-        reply_markup=MarkupBuilder.hide_menu,
-        parse_mode="HTML",
-    )
-    await message_context_manager.add_msgId_to_help_menu_dict(
-        chat_id=message.chat.id, msgId=msg.message_id
-    )
-
-    await ChatGPTMessageRebuilder.rewrite_message(
-        account_context.account_name[message.chat.id]
-    )
-
-    await message_context_manager.delete_msgId_from_help_menu_dict(
-        chat_id=message.chat.id
-    )
-
-    msg = await bot.send_message(
-        message.chat.id,
-        f"{MarkupBuilder.ReloadedChatGPTMessageText}\n",
+        MarkupBuilder.errorNotAllFieldsFilledForYandexGPT,
         reply_markup=MarkupBuilder.back_to_edit_menu(
             account_name=account_context.account_name[message.chat.id]
         ),
@@ -456,6 +457,63 @@ async def _sendReloadChatGPTMessageText(message):
     await message_context_manager.add_msgId_to_help_menu_dict(
         chat_id=message.chat.id, msgId=msg.message_id
     )
+
+async def _sendReloadYandexGPTMessageText(message):
+    async with async_session() as session:
+        account_dal = AccountDAL(session)
+        account = await account_dal.getAccountBySessionName(
+            session_name=account_context.account_name[message.chat.id]
+        )
+        if (account.message != "Не указано" and account.prompt != "Не указан" and account.target_chat != "Не указан"):
+
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=message.chat.id
+            )
+
+            msg = await bot.send_message(
+                message.chat.id,
+                "⏰<b>Ожидаем ответ от YandexGPT</b>",
+                reply_markup=MarkupBuilder.hide_menu,
+                parse_mode="HTML",
+            )
+            await message_context_manager.add_msgId_to_help_menu_dict(
+                chat_id=message.chat.id, msgId=msg.message_id
+            )
+            prompt = f"""
+        Переформулируй и дополни рекламное сообщение.
+        Не убирай {account.target_chat} из сообщения - это ссылка на рекламируемый чат. Если его нет, то обязательно добавь в конец сообщения.
+        Не добавляй лишних слов в ответ, только сгенерированое рекламное сообщение.
+        Вот описание канала, оно поможет для переформулировки и дополнения рекламного сообщения: {account.prompt}.
+        Вот сообщение для редактирования: {account.message}
+        """
+
+            new_message = await YandexGPTMessageRebuilder.rewrite_message(
+                cls=YandexGPTMessageRebuilder,
+                account_name=account_context.account_name[message.chat.id],
+                prompt=prompt
+            )
+            await account_dal.updateMessage(
+                session_name=account_context.account_name[message.chat.id],
+                new_message=new_message
+            )
+
+            await message_context_manager.delete_msgId_from_help_menu_dict(
+                chat_id=message.chat.id
+            )
+
+            msg = await bot.send_message(
+                message.chat.id,
+                f"{MarkupBuilder.ReloadedYandexGPTMessageText}\n",
+                reply_markup=MarkupBuilder.back_to_edit_menu(
+                    account_name=account_context.account_name[message.chat.id]
+                ),
+                parse_mode="HTML",
+            )
+            await message_context_manager.add_msgId_to_help_menu_dict(
+                chat_id=message.chat.id, msgId=msg.message_id
+            )
+        else: 
+            await _errorNotAllFieldsFilledForYandexGPT(message)
 
 
 # --------------Reload message by ChatGPT--------------
@@ -525,13 +583,15 @@ async def delete_account(message):
             msg = await bot.send_message(
                 chat_id=message.chat.id,
                 text=MarkupBuilder.account_deleted,
-                reply_markup=MarkupBuilder.back_to_edit_menu(
-                    account_name=account_context.account_name[message.chat.id]
-                ),
+                reply_markup=MarkupBuilder.back_to_acc_edit(),
                 parse_mode="HTML",
             )
             await message_context_manager.add_msgId_to_help_menu_dict(
                 chat_id=message.chat.id, msgId=msg.id
+            )
+            await bot.delete_state(
+                user_id=message.chat.id,
+                chat_id=message.chat.id
             )
         else:
             await _errorDeleteAccountChat(message=message)
