@@ -22,19 +22,63 @@ services:
     networks:
       - custom
 
-#  app:
-#    build:
-#      context: ./App
-#      dockerfile: Dockerfile
-#    container_name: app_container
-#    restart: always
-#    ports:
-#      - "8000:8000"
-#    networks:
-#      - custom
-#    depends_on:
-#      - db
+  app:
+    build:
+      context: ./App
+      dockerfile: Bot.Dockerfile
+    container_name: app_container
+    restart: always
+    ports:
+      - "8000:8000"
+    networks:
+      - custom
+    depends_on:
+      - db
 
+  tg_spam_plugin:
+    build:
+      context: ./App/UserAgent
+      dockerfile: TgSpamPlugin.Dockerfile
+    container_name: tg_spam_plugin_container
+    restart: always
+    networks:
+      - custom
+    depends_on:
+      - db
+
+  tg_track_stories_plugin:
+    build:
+      context: ./App/UserAgent
+      dockerfile: TgTrackStoriesPlugin.Dockerfile
+    container_name: tg_track_stories_plugin_container
+    restart: always
+    networks:
+      - custom
+    depends_on:
+      - db
+
+  inst_spam_plugin:
+    build:
+      context: ./App/Parser
+      dockerfile: InstSpamPlugin.Dockerfile
+    container_name: inst_spam_plugin_container
+    restart: always
+    networks:
+      - custom
+    depends_on:
+      - db
+
+  run:
+    build: .
+    container_name: run_container
+    command: python3 App/Bot/main.py && python3 App/UserAgent/UserAgentStoriesPlugin.py && python3 App/UserAgent/UserAgentSpamPlugin.py && python3 App/Parser/ParserSpamPlugin.py
+    depends_on:
+      - app
+      - tg_spam_plugin
+      - tg_track_stories_plugin
+      - inst_spam_plugin
+    networks:
+      - custom
 
 networks:
   custom:

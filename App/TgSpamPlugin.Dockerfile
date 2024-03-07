@@ -10,8 +10,11 @@ COPY ../requirements.txt .
 # Устанавливаем зависимости
 RUN pip install -r requirements.txt
 
-# Копируем все файлы из текущей директории внутрь контейнера
-COPY . .
+# Копируем файл, который мы запускаем в CMD
+COPY App/UserAgent/UserAgentSpamPlugin.py .
+
+# Устанавливаем переменную окружения PYTHONPATH
+ENV PYTHONPATH=$PYTHONPATH:/app
 
 # Запускаем ваше приложение
-CMD ["python", "App/main.py"]
+CMD ["python3", "UserAgentSpamPlugin.py"]
