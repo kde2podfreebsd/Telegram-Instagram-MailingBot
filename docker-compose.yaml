@@ -25,7 +25,7 @@ services:
   app:
     build:
       context: ./App
-      dockerfile: Bot.Dockerfile
+      dockerfile: ./Dockerfile
     container_name: app_container
     restart: always
     ports:
@@ -37,8 +37,8 @@ services:
 
   tg_spam_plugin:
     build:
-      context: ./App/UserAgent
-      dockerfile: TgSpamPlugin.Dockerfile
+      context: ./App/TgSpamPlugin
+      dockerfile: ./Dockerfile
     container_name: tg_spam_plugin_container
     restart: always
     networks:
@@ -48,8 +48,8 @@ services:
 
   tg_track_stories_plugin:
     build:
-      context: ./App/UserAgent
-      dockerfile: TgTrackStoriesPlugin.Dockerfile
+      context: ./App/TgTrackStories
+      dockerfile: ./Dockerfile
     container_name: tg_track_stories_plugin_container
     restart: always
     networks:
@@ -59,8 +59,8 @@ services:
 
   inst_spam_plugin:
     build:
-      context: ./App/Parser
-      dockerfile: InstSpamPlugin.Dockerfile
+      context: ./App/InstSpamPlugin
+      dockerfile: ./Dockerfile
     container_name: inst_spam_plugin_container
     restart: always
     networks:
@@ -69,7 +69,9 @@ services:
       - db
 
   run:
-    build: .
+    build:
+      context: .
+      dockerfile: App/Dockerfile  # Уточните путь к Dockerfile вашего приложения
     container_name: run_container
     command: python3 App/Bot/main.py && python3 App/UserAgent/UserAgentStoriesPlugin.py && python3 App/UserAgent/UserAgentSpamPlugin.py && python3 App/Parser/ParserSpamPlugin.py
     depends_on:

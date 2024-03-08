@@ -5,16 +5,16 @@ FROM python:3.11
 WORKDIR /app
 
 # Копируем файл requirements.txt из корневой папки внутрь контейнера
-COPY ../requirements.txt .
+COPY ./requirements.txt ./TgTrackStories/requirements.txt
 
 # Устанавливаем зависимости
-RUN pip install -r requirements.txt
+RUN pip install -r TgTrackStories/requirements.txt
 
 # Копируем файл, который мы запускаем в CMD
-COPY App/UserAgent/UserAgentSpamPlugin.py .
+COPY . .
 
 # Устанавливаем переменную окружения PYTHONPATH
 ENV PYTHONPATH=$PYTHONPATH:/app
 
 # Запускаем ваше приложение
-CMD ["python3", "UserAgentSpamPlugin.py"]
+CMD ["python3", "App/UserAgent/UserAgentStoriesPlugin.py"]

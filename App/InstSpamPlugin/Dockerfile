@@ -5,16 +5,17 @@ FROM python:3.11
 WORKDIR /app
 
 # Копируем файл requirements.txt из корневой папки внутрь контейнера
-COPY ../requirements.txt .
+COPY ./requirements.txt ./InstSpamPlugin/requirements.txt
 
 # Устанавливаем зависимости
-RUN pip install -r requirements.txt
+RUN pip install -r InstSpamPlugin/requirements.txt
 
 # Копируем файл, который мы запускаем в CMD
-COPY App/Parser/ParserSpamPluign.py .
+COPY . .
 
 # Устанавливаем переменную окружения PYTHONPATH
 ENV PYTHONPATH=$PYTHONPATH:/app
 
 # Запускаем ваше приложение
-CMD ["python3", "ParserSpamPluign.py"]
+CMD ["python3", "App/Parser/ParserSpamPluign.py"]
+
