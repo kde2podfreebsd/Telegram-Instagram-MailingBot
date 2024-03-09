@@ -3,7 +3,7 @@ from alembic.config import Config
 import asyncio
 
 async def asyncInitializeDatabase():
-    loop = asyncio.get_running_loop()
+    loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(None, initializeDatabase)
     return result
 

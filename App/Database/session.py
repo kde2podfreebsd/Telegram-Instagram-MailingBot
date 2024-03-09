@@ -17,7 +17,6 @@ POSTGRES_DB = str(os.getenv("POSTGRES_DB"))
 
 
 DATABASE_URL = f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
-SYNC_DATABASE_URL = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
 
 engine = create_async_engine(
     DATABASE_URL,
@@ -26,7 +25,7 @@ engine = create_async_engine(
     execution_options={"isolation_level": "AUTOCOMMIT"}
 )
 
-async_session = async_sessionmaker(engine, expire_on_commit=True, class_=AsyncSession)
+async_session = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
 
 async def get_db() -> Generator: 

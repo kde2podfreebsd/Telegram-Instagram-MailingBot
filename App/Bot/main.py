@@ -76,7 +76,7 @@ from App.Database.session import async_session
 from App.Database.DAL.AccountInstDAL import AccountInstDAL
 from App.Database.DAL.ProxyDAL import ProxyAddressDAL
 from App.Database.AlembicWrapper import asyncInitializeDatabase
-
+from App.Database.AlembicWrapper import initializeDatabase
 
 
 @singleton
@@ -613,8 +613,10 @@ class Bot:
 if __name__ == "__main__":
     b = Bot()
     loop = asyncio.get_event_loop()
+    
+    initializeDatabase()
+
     try:
-        loop.run_until_complete(asyncInitializeDatabase())
         loop.run_until_complete(b.polling())
     except KeyboardInterrupt:
         pass
