@@ -7,7 +7,7 @@ from telebot.asyncio_handler_backends import StatesGroup
 from App.Bot.Handlers.EditAccountsMenuHandler import _editAccountsMenu
 from App.Bot.Handlers.EditAccountsMenuHandler import _showAccountActions
 from App.Bot.Markups import MarkupBuilder
-from App.YandexGPT.YandexGTPMsgRebuilder import YandexGPTMessageRebuilder
+from App.YandexGPT.YandexGPTMsgRebuilder import YandexGPTMessageRebuilder
 from App.Config import account_context
 from App.Config import bot
 from App.Config import message_context_manager
