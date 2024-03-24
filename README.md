@@ -197,7 +197,7 @@ python3 App/Parser/ParserSpamPlugin.py
 
 **InstagramParser**: класс, наследуемый от класса Parser, отвечающий за парсинг веб сайта instagram.com
 
-**login, password, proxy** - поля класса, отвечающие за хранение строк логин, пароля и прокси адреса соотвественно
+**login, password, proxy** - поля класса, отвечающие за хранение строк логин, пароля и прокси адреса соответственно
 
 **check_proxy(self)** - метод для проверки подключения к введенному прокси серверу 
 
@@ -224,7 +224,7 @@ dialogue - объект страницы, followers_count - количество
 
 ---
 
-❗️Если на компьютере установлен веб браузер Chrome, то важно помнить, чтобы он был последней версии, иначе будут происходить конфликты с webdriver_manager. Также, после каждого официального обновления браузера нужно обновлять undetected-chromedriver во избежании ошибок
+❗️Если на компьютере установлен веб-браузер Chrome, то важно помнить, чтобы он был последней версии, иначе будут происходить конфликты с webdriver_manager. Также, после каждого официального обновления браузера нужно обновлять undetected-chromedriver во избежание ошибок
 ```.python
 # error: urllib.error.HTTPError: HTTP Error 404: Not Found
 # fix:
@@ -241,7 +241,7 @@ pip install --upgrade undetected-chromedriver
 
 **close_parser(self)** - закрытия веб ресурсов, связанных с классом, таких как веб драйвер
 
-Для тестирования бота с GUI закомменитруйте данные строчки:
+Для тестирования бота с GUI закомментируйте данные строчки:
 
 ```.python
 # в __init__
@@ -282,7 +282,7 @@ self.__display.stop()
 
 ---
 
-**get_members_from_tg(session_name, usernames, limit=None)** - функция для парсинга премиум подписчиков из каналов с usernames для аккаунт с session_name
+**get_members_from_tg(session_name, usernames, limit=None)** - функция для парсинга премиум подписчиков из каналов с usernames для аккаунта с session_name
 
 ```UserAgentSpamPlugin.py```: плагин, отвечающий за спам рассылку Telegram
 
@@ -294,9 +294,9 @@ self.__display.stop()
 
 ```json_history```: папка для хранения логов запросов различных аккаунтов к YandexGPT
 
-```YandexGTPMsgRebuilder.py```:
+```YandexGPTMsgRebuilder.py```:
 
-**YandexGTPMsgRebuilder** - класс конфигурирующий запросы к YandexGPT
+**YandexGPTMsgRebuilder** - класс конфигурирующий запросы к YandexGPT
 
 **rewrite_message(cls, account_name: str, prompt: str)** - метод, отправляющий YandexGPT сообщение о перегенарации текущего сообщения, согласно промпту 
 
@@ -305,5 +305,4 @@ self.__display.stop()
 * [@complicat9d](https://github.com/complicat9d)
 
 * [@kde2podfreebsd](https://github.com/kde2podfreebsd)
-
 
