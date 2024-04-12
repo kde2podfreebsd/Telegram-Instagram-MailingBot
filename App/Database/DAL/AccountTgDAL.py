@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from App.Config import sessions_dirPath
-from App.Database.Models.Models import Account
+from App.Database.Models.Models import AccountTg
 from App.Logger import ApplicationLogger
 
 logger = ApplicationLogger()
@@ -35,7 +35,7 @@ class AccountDAL:
                 logger.log_error(f"Account already exist with this name {session_name}")
                 return None
 
-            account = Account(
+            account = AccountTg(
                 session_file_path=session_file_path,
                 target_chat=target_chat,
                 message=message,
@@ -148,18 +148,32 @@ class AccountDAL:
         else:
             logger.log_error("Account doesnt exists in database")
             return False
+    
+    async def updateDelay(self, session_name, new_delay):
+        account = await self.getAccountBySessionName(
+            session_name=session_name
+        )
+        if account:
+            account.delay = new_delay
+            await self.db_session.commit()
+            logger.log_info(f"AccountTg {session_name}'s delay has been changed to {new_delay}")
+            return True
+        else:
+            logger.log_error(f"AccountTg {session_name} does not exist in data base")
+            return False
+    
 
     async def getAccountBySessionName(self, session_name):
         result = await self.db_session.execute(
-            select(Account).filter(
-                Account.session_file_path.ilike(f"%{session_name}.session")
+            select(AccountTg).filter(
+                AccountTg.session_file_path.ilike(f"%{session_name}.session")
             )
         )
         return result.scalar()
 
     async def getSessionNamesWithTrueStatus(self):
         result = await self.db_session.execute(
-            select(Account.session_file_path).filter(Account.status == True)
+            select(AccountTg.session_file_path).filter(AccountTg.status == True)
         )
         session_paths = [row[0] for row in result]
         session_names = [
@@ -168,7 +182,7 @@ class AccountDAL:
         return session_names
 
     async def getAllAccounts(self):
-        result = await self.db_session.execute(select(Account))
+        result = await self.db_session.execute(select(AccountTg))
         return [row[0] for row in result]
 
     async def createAccountsFromSessionFiles(self):
