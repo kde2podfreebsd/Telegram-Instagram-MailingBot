@@ -1,39 +1,13 @@
 version: "3.9"
 services:
-  db:
-    container_name: db
-    image: postgres:14.1-alpine
-    restart: always
-    env_file:
-      - .env
-    ports:
-      - "5432:5432"
-    networks:
-      - custom
-
-  pgadmin:
-    container_name: pgadmin4_container
-    image: dpage/pgadmin4
-    restart: always
-    env_file:
-      - .env
-    ports:
-      - "5050:80"
-    networks:
-      - custom
-
   app:
-    build:
+    bot:
       context: ./
       dockerfile: ./Dockerfile.bot
-    container_name: app_container
+    container_name: bot_container
     restart: always
-    ports:
-      - "8000:8000"
     networks:
       - custom
-    depends_on:
-      - db
 
   tg_spam_plugin:
     build:
@@ -43,8 +17,6 @@ services:
     restart: always
     networks:
       - custom
-    depends_on:
-      - db
 
   tg_track_stories_plugin:
     build:
@@ -54,8 +26,6 @@ services:
     restart: always
     networks:
       - custom
-    depends_on:
-      - db
 
   inst_spam_plugin:
     build:
@@ -65,8 +35,6 @@ services:
     restart: always
     networks:
       - custom
-    depends_on:
-      - db
 
 networks:
   custom:
